@@ -13,8 +13,7 @@
       <fileMode>555</fileMode>
       <includes>
         <include>bin/okeanos-*</include>
-        <include>okeanos/*.py</include>
-        <include>okeanos/packages/*.py</include>        
+        <include>${connector.package.dir}/*.py</include>
       </includes>
       <excludes>
         <exclude>**/*.pyc</exclude>

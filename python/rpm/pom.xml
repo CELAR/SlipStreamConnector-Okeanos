@@ -67,7 +67,7 @@
                 <argument>${project.build.directory}/okeanoslibs.tar.gz</argument>
                 <argument>-C</argument>
                 <argument>${project.build.directory}/dependency</argument>
-                <argument>okeanos</argument>
+                <argument>${connector.package.dir}</argument>
               </arguments>
             </configuration>
           </execution>
@@ -158,11 +158,10 @@
                             <source>
                               <location>target/dependency</location>
                               <includes>
-                                <include>okeanos/**/*</include>
-                                <include>okeanos/packages/*.py</include>
+                                <include>${connector.package.dir}/**/*</include>
                               </includes>
                               <excludes>
-                                <exclude>okeanos/**/*.pyc</exclude>
+                                <exclude>${connector.package.dir}/**/*.pyc</exclude>
                               </excludes>
                             </source>
                           </sources>

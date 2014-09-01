@@ -11,6 +11,10 @@
     <version>0.0.1-SNAPSHOT</version>
   </parent>
 
+  <properties>
+      <connector.package.dir>slipstream_okeanos</connector.package.dir>
+  </properties>
+
   <modules>
      <module>tar</module>
   </modules>

@@ -3,8 +3,8 @@
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-from slipstream.cloudconnectors.okeanos.OkeanosCommand import OkeanosCommand
-from slipstream.cloudconnectors.okeanos import LOG
+from slipstream_okeanos.OkeanosCommand import OkeanosCommand
+from slipstream_okeanos import LOG
 
 
 class MainProgram(OkeanosCommand):
@@ -24,7 +24,7 @@ class MainProgram(OkeanosCommand):
 
         parser.add_option('--security-groups', dest='security_groups', help='Comma separated list of security groups', default='', metavar='SECGROUPS')
 
-        parser.add_option('--context-script', dest='context_script', help='Context script', default='', metavar='SCRIPT')        
+        parser.add_option('--context-script', dest='context_script', help='Context script', default='', metavar='SCRIPT')
 
     def checkExtraOptions(self, options, parser):
         if not all((options.imageId, options.instance_type, options.region, options.instance_name)):

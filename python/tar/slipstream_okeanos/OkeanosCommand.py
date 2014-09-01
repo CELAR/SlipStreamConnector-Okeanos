@@ -20,12 +20,12 @@ from optparse import OptionParser
 import os
 
 from slipstream.SlipStreamHttpClient import UserInfo
-from slipstream.cloudconnectors.okeanos import OkeanosNativeClient
-from slipstream.cloudconnectors.okeanos.OkeanosClientCloud import OkeanosClientCloud
+from sliplstream_okeanos import OkeanosNativeClient
+from sliplstream_okeanos.OkeanosClientCloud import OkeanosClientCloud
 
 
 class OkeanosCommand(object):
-    def __init__(self, args = None):
+    def __init__(self, args=None):
         self.providerName = OkeanosClientCloud.cloudName
         self.parser, self.options, self.args = self.parseArgs(args)
         self.userInfo = self._createUserInfo()
@@ -34,7 +34,7 @@ class OkeanosCommand(object):
         authURL = self.options.endpoint
         self.okeanosClient = OkeanosNativeClient(token, authURL)
 
-    def parseArgs(self, args = None):
+    def parseArgs(self, args=None):
         parser = OptionParser()
         self.setCommonOptions(parser)
         self.setExtraOptions(parser)

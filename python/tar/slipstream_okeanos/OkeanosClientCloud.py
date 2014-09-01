@@ -6,9 +6,9 @@
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
- 
+
       http://www.apache.org/licenses/LICENSE-2.0
- 
+
  Unless required by applicable law or agreed to in writing, software
  distributed under the License is distributed on an "AS IS" BASIS,
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,12 +16,12 @@
  limitations under the License.
 """
 
-#pylint: disable=C0111
+# pylint: disable=C0111
 
 
 from slipstream.cloudconnectors.BaseCloudConnector import BaseCloudConnector
 from slipstream.NodeDecorator import KEY_RUN_CATEGORY
-from slipstream.cloudconnectors.okeanos import LOG, OkeanosNativeClient, loadPubRsaKeyData, NodeStatus
+from sliplstream_okeanos import LOG, OkeanosNativeClient, loadPubRsaKeyData, NodeStatus
 import slipstream.exceptions.Exceptions as Exceptions
 
 
@@ -43,14 +43,14 @@ class OkeanosClientCloud(BaseCloudConnector):
 
         super(OkeanosClientCloud, self).__init__(configHolder)
         LOG("OkeanosClientCloud::__init__# self.cloud = %s" % self.cloud)
-        
+
         self.setCapabilities(contextualization=True, orchestrator_can_kill_itself_or_its_vapp=True)
 
         self.okeanosAuthURL = None
         self.okeanosUUID = None
         self.okeanosToken = None
         self.okeanosClient = None
-        
+
 
     def makeCloudKey(self, key):
         """
@@ -90,7 +90,7 @@ class OkeanosClientCloud(BaseCloudConnector):
 
         LOG("OkeanosClientCloud::initialization# user_info = %s" % userInfo)
         self.okeanosAuthURL = userInfo[self.makeCloudKey('endpoint')]
-        self.okeanosUUID  = userInfo[self.makeCloudKey('username')]
+        self.okeanosUUID = userInfo[self.makeCloudKey('username')]
         self.okeanosToken = userInfo[self.makeCloudKey('password')]
         self.okeanosClient = OkeanosNativeClient(self.okeanosToken, self.okeanosAuthURL)
 
@@ -157,7 +157,7 @@ class OkeanosClientCloud(BaseCloudConnector):
         LOG("OkeanosClientCloud::_startImage# initScriptData = %s" % initScriptData)
 
         imageId = self.getImageId(imageInfo)
-        flavorIdOrName = self._getInstanceType(imageInfo) # imageInfo['cloud_parameters'][self.cloud][self.cloudKey('instance.type')]
+        flavorIdOrName = self._getInstanceType(imageInfo)  # imageInfo['cloud_parameters'][self.cloud][self.cloudKey('instance.type')]
         sshPubKey = userInfo.get('General.ssh.public.key')
         initScriptPath = "/root/okeanosNodeInitScript"
         if initScriptData is None:
@@ -165,9 +165,9 @@ class OkeanosClientCloud(BaseCloudConnector):
         else:
             initScriptPathAndData = (initScriptPath, initScriptData)
 
-        remoteUsername = "root" # TODO make it configurable
+        remoteUsername = "root"  # TODO make it configurable
         localPubKeyData = loadPubRsaKeyData()
-        runInitScriptSynchronously = False # TODO make it configurable
+        runInitScriptSynchronously = False  # TODO make it configurable
 
         if flavorIdOrName is None:
             raise Exceptions.ParameterNotFoundException("Couldn't find the specified flavor: %s" % flavorIdOrName)
@@ -190,7 +190,7 @@ class OkeanosClientCloud(BaseCloudConnector):
             LOG("[%s] #STDERR# %s" % (hostname, line))
 
         vm = dict(
-            networkType='Public', # self.getCloudParameters(image_info)['network']
+            networkType='Public',  # self.getCloudParameters(image_info)['network']
             instance=nodeDetails,
             ip='',
             id=nodeDetails.id
