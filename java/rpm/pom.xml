@@ -1,0 +1,130 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>SlipStreamConnector-Okeanos-java-rpm</artifactId>
+  <name>SlipStream Connector for ~Okeanos - Java (RPM)</name>
+
+  <packaging>pom</packaging>
+
+  <parent>
+    <groupId>com.sixsq.slipstream</groupId>
+    <artifactId>SlipStreamConnector-Okeanos-java</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+  </parent>
+
+  <properties>
+    <connector.artefactId>SlipStreamConnector-Okeanos-java-jar</connector.artefactId>
+  </properties>
+
+	<build>
+
+		<plugins>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+
+				<executions>
+
+					<execution>
+						<id>copy-jars</id>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/dependency/jars</outputDirectory>
+						</configuration>
+					</execution>
+
+					<execution>
+						<id>copy-jar</id>
+						<goals>
+							<goal>copy</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/dependency/jars</outputDirectory>
+							<artifactItems>
+								<artifactItem>
+									<groupId>com.sixsq.slipstream</groupId>
+									<artifactId>${connector.artefactId}</artifactId>
+									<version>${project.version}</version>
+									<type>jar</type>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
+
+				</executions>
+
+			</plugin>
+
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>rpm-maven-plugin</artifactId>
+				<extensions>true</extensions>
+				<configuration>
+					<classifier>${package.os}</classifier>
+					<release>${BUILD_NUMBER}.${package.os}</release>
+					<summary>SlipStream Connector for ~Okeanos</summary>
+					<name>slipstream-connector-okeanos</name>
+					<group>Applications/Engineering</group>
+					<vendor>SixSq</vendor>
+					<packager>SixSq</packager>
+					<copyright>Apache License, Version 2.0</copyright>
+					<url>http://sixsq.com</url>
+					<needarch>noarch</needarch>
+					<description>
+						SlipStream Connector for ~Okeanos.
+					</description>
+					<requires>
+						<require>java-1.7.0-openjdk</require>
+						<require>slipstream-connector-okeanos-python</require>
+					</requires>
+					<mappings>
+
+						<mapping>
+              <directory>${jetty.lib.ext.dir}/okeanos</directory>
+							<filemode>644</filemode>
+							<username>root</username>
+							<groupname>root</groupname>
+							<directoryIncluded>false</directoryIncluded>
+							<sources>
+								<source>
+                  <location>target/dependency/jars/${connector.artefactId}-${project.version}.jar</location>
+									<destination>slipstream-connector-okeanos.jar</destination>
+								</source>
+							</sources>
+						</mapping>
+
+					</mappings>
+
+          <postinstallScriptlet>
+            <script>
+/bin/cp -f ${jetty.lib.ext.dir}/okeanos/* ${slipstream.war.web-inf.lib.dir}
+            </script>
+          </postinstallScriptlet>
+
+				</configuration>
+
+				<executions>
+					<execution>
+						<id>attach-rpm</id>
+						<phase>package</phase>
+						<goals>
+							<goal>attached-rpm</goal>
+						</goals>
+					</execution>
+				</executions>
+
+			</plugin>
+
+		</plugins>
+
+	</build>
+
+</project>

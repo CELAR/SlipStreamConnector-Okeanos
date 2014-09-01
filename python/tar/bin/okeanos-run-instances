@@ -1,0 +1,65 @@
+#!/usr/bin/env python
+
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+from slipstream.cloudconnectors.okeanos.OkeanosCommand import OkeanosCommand
+from slipstream.cloudconnectors.okeanos import LOG
+
+
+class MainProgram(OkeanosCommand):
+    def __init__(self):
+        super(MainProgram, self).__init__()
+
+    def setExtraOptions(self, parser):
+        parser.add_option('--image-id', dest='imageId', help='Image ID. Mandatory.', default='', metavar='ID')
+
+        parser.add_option('--instance-name', dest='instance_name', help='Name of the instance', default='', metavar='NAME')
+
+        parser.add_option('--instance-type', dest='instance_type', help='Instance Type (Flavor)', default=None, metavar='TYPE')
+
+        parser.add_option('--network-type', dest='network_type', help='Network type (public or private)', default='public', metavar='NETWORK-TYPE')
+
+        parser.add_option('--public-key', dest='public_key', help='Public key in the OpenSSH format', default='', metavar='PUBKEY')
+
+        parser.add_option('--security-groups', dest='security_groups', help='Comma separated list of security groups', default='', metavar='SECGROUPS')
+
+        parser.add_option('--context-script', dest='context_script', help='Context script', default='', metavar='SCRIPT')        
+
+    def checkExtraOptions(self, options, parser):
+        if not all((options.imageId, options.instance_type, options.region, options.instance_name)):
+            parser.error('Some mandatory options were not given values.')
+
+    def setExtraUserInfo(self, userInfo):
+        userInfo['General.ssh.public.key'] = self.options.public_key
+
+    def doWork(self):
+        nodeName = self.options.instance_name
+        flavorIdOrName = self.options.instance_type
+        imageId = self.options.imageId
+        sshPubKey = self.options.public_key
+        contextScriptData = self.options.context_script
+
+        contextScriptPath = "/root/okeanos-contextualizer" # TODO make it configurable in the SlipStreamServer GUI
+        contextScriptPathAndData = (contextScriptPath, contextScriptData)
+        nodeDetails, scriptResults = self.okeanosClient.createNodeAndWait(nodeName, flavorIdOrName, imageId, sshPubKey,
+                                                                          initScriptPathAndData=contextScriptPathAndData)
+        scriptExitCode, scriptStdoutLines, scriptStderrLines = scriptResults
+        hostname = nodeDetails.ipv4s[0]
+        for line in scriptStdoutLines:
+            LOG("[%s] #STDOUT# %s" % (hostname, line))
+        for line in scriptStderrLines:
+            LOG("[%s] #STDERR# %s" % (hostname, line))
+
+        print nodeDetails.id, nodeDetails.ipv4s[0], scriptExitCode, nodeDetails.adminPass
+
+if __name__ == "__main__":
+    try:
+        command = MainProgram()
+        command.doWork()
+    except KeyboardInterrupt:
+        print '\n\nExecution interrupted by the user... goodbye!'
+    except Exception as e:
+        import sys
+        print >> sys.stderr, e
+        exit(1)

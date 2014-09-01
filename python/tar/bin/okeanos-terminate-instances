@@ -1,0 +1,33 @@
+#!/usr/bin/env python
+
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+from slipstream.cloudconnectors.okeanos.OkeanosCommand import OkeanosCommand
+
+
+class MainProgram(OkeanosCommand):
+    def __init__(self):
+        super(MainProgram, self).__init__()
+
+    def setExtraOptions(self, parser):
+        parser.add_option('--instance-id', dest='instanceId', help='Instance ID', default='', metavar='ID')
+
+    def checkExtraOptions(self, options, parser):
+        if not options.instanceId:
+            parser.error('Some options were not given values')
+
+    def doWork(self):
+        nodeId = self.options.instanceId
+        self.okeanosClient.deleteNodeAndWait(nodeId)
+
+if __name__ == "__main__":
+    try:
+        command = MainProgram()
+        command.doWork()
+    except KeyboardInterrupt:
+        print '\n\nExecution interrupted by the user... goodbye!'
+    except Exception as e:
+        import sys
+        print >> sys.stderr, e
+        exit(1)

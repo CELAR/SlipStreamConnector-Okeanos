@@ -1,0 +1,27 @@
+#!/usr/bin/env python
+
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+from slipstream.cloudconnectors.okeanos.OkeanosCommand import OkeanosCommand
+
+
+class MainProgram(OkeanosCommand):
+    def __init__(self):
+        super(MainProgram, self).__init__()
+
+    def doWork(self):
+        nodes = self.okeanosClient.listNodes()
+        for node in nodes:
+            print node.id, node.status.slipstreamStatus
+
+if __name__ == "__main__":
+    try:
+        command = MainProgram()
+        command.doWork()
+    except KeyboardInterrupt:
+        print '\n\nExecution interrupted by the user... goodbye!'
+    except Exception as e:
+        import sys
+        print >> sys.stderr, e
+        exit(1)
