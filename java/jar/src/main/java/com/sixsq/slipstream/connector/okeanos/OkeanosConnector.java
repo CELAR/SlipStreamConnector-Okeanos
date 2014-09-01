@@ -303,8 +303,8 @@ public class OkeanosConnector extends CliConnectorBase {
     }
 
     @Override
-    protected String getCookieForEnvironmentVariable(String identifier) {
-        return generateCookie(identifier);
+    protected String getCookieForEnvironmentVariable(String identifier, String runId) {
+        return generateCookie(identifier, runId);
     }
 
     protected String createContextualizationData(Run run, User user) throws ConfigurationException, ServerExecutionEnginePluginException, SlipStreamClientException {
@@ -347,7 +347,7 @@ public class OkeanosConnector extends CliConnectorBase {
             export("SLIPSTREAM_BOOTSTRAP_BIN", configuration.getRequiredProperty("slipstream.update.clientbootstrapurl")).
             export("SLIPSTREAM_CATEGORY", run.getCategory().toString()).
             export("SLIPSTREAM_USERNAME",           username).
-            export("SLIPSTREAM_COOKIE",             getCookieForEnvironmentVariable(username)).
+            export("SLIPSTREAM_COOKIE",             getCookieForEnvironmentVariable(username, run.getUuid())).
             export("SLIPSTREAM_VERBOSITY_LEVEL",    getVerboseParameterValue(user)).
 
             nl().
