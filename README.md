@@ -17,3 +17,6 @@ Source code for SlipStream ~Okeanos connector.
 In order for the ~Okeanos connector to be fully functional, you need to install the ~Okeanos python support library, named `kamaki`, in the machine that hosts the SlipStream Server.
 
 	$ pip install kamaki
+
+## License
+This software is under (Apache v2)[LICENSE.txt]
