@@ -12,3 +12,8 @@ Source code for SlipStream ~Okeanos connector.
 | Extra disk volatile   |   ✗   |
 | Extra disk persistent |   ✗   |
 
+## Installation
+### Slipstream Server
+In order for the ~Okeanos connector to be fully functional, you need to install the ~Okeanos python support library, named `kamaki`, in the machine that hosts the SlipStream Server.
+
+	$ pip install kamaki
