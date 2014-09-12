@@ -20,6 +20,7 @@ MyIP = GetIP()
 # noinspection PyBroadException
 def myHostnameAndIP():
     try:
+        raise Exception()
         hostname = socket.gethostname()
         ip = socket.gethostbyname(hostname)
         betterIP = MyIP.MyIP()
@@ -38,14 +39,14 @@ def LOG(s):
     stderr.flush()
 
 
-def LOGException(e, prefix = ""):
+def LOGException(e, prefix=""):
     """
     :type e: exceptions.Exception
     """
     LOG("%sException '%s' with args %s" % (prefix, e.__class__.__name__, e.args))
 
 
-def LOGSshException(username, hostname, e, prefix = ">> "):
+def LOGSshException(username, hostname, e, prefix=">> "):
     """
     :type username: str
     :type hostname: str
@@ -54,7 +55,7 @@ def LOGSshException(username, hostname, e, prefix = ">> "):
     LOG("%sException: For %s@%s got '%s' with args %s" % (prefix, username, hostname, e.__class__.__name__, e.args))
 
 
-def loadRsaPrivKey(name = "id_rsa"):
+def loadRsaPrivKey(name="id_rsa"):
     """
     :type name: str
     """
@@ -66,7 +67,7 @@ def loadRsaPrivKey(name = "id_rsa"):
     return rsaKey
 
 
-def loadPubRsaKeyData(name = "id_rsa.pub"):
+def loadPubRsaKeyData(name="id_rsa.pub"):
     """
     :type name: str
     """
@@ -77,7 +78,7 @@ def loadPubRsaKeyData(name = "id_rsa.pub"):
         return f.read()
 
 
-def newSshClient(hostname, username="root", localPrivKey = None, timeout = None):
+def newSshClient(hostname, username="root", localPrivKey=None, timeout=None):
     from paramiko.client import SSHClient, AutoAddPolicy
 
     localPrivKey = localPrivKey or loadRsaPrivKey()
@@ -85,15 +86,15 @@ def newSshClient(hostname, username="root", localPrivKey = None, timeout = None)
     missingHostKeyPolicy = AutoAddPolicy()
     ssh = SSHClient()
     ssh.set_missing_host_key_policy(missingHostKeyPolicy)
-    ssh.connect(hostname, username = username, pkey = localPrivKey, timeout = timeout)
+    ssh.connect(hostname, username=username, pkey=localPrivKey, timeout=timeout)
 
     return ssh
 
 
 class NodeStatus(object):
-    ACTIVE  = 'ACTIVE'   # running
+    ACTIVE = 'ACTIVE'  # running
     STOPPED = 'STOPPED'  # shut down
-    BUILD   = 'BUILD'    # building
+    BUILD = 'BUILD'  # building
     DELETED = 'DELETED'
     UNKNOWN = 'UNKNOWN'
 
@@ -101,17 +102,17 @@ class NodeStatus(object):
         """
         :type okeanosStatus: str
         """
-        self.okeanosStatus = okeanosStatus # This is a string
+        self.okeanosStatus = okeanosStatus  # This is a string
         if okeanosStatus == NodeStatus.ACTIVE:
-            self.slipstreamStatus   = 'Running' # or 'Active' or 'On'
+            self.slipstreamStatus = 'Running'  # or 'Active' or 'On'
         elif okeanosStatus == NodeStatus.STOPPED:
-            self.slipstreamStatus   = 'Stopped'
+            self.slipstreamStatus = 'Stopped'
         elif okeanosStatus == NodeStatus.BUILD:
-            self.slipstreamStatus   = 'Pending'
+            self.slipstreamStatus = 'Pending'
         elif okeanosStatus == NodeStatus.DELETED:
             self.slipstreamStatus = 'Terminated'
         else:
-            self.slipstreamStatus   = 'Unknown'
+            self.slipstreamStatus = 'Unknown'
 
     def __str__(self):
         return self.slipstreamStatus
@@ -207,9 +208,9 @@ class NodeDetails(object):
 
 def runCommandOnHost(hostname, command,
                      username='root',
-                     localPrivKey = None,
-                     timeout = None,
-                     runSynchronously = True):
+                     localPrivKey=None,
+                     timeout=None,
+                     runSynchronously=True):
     """
     :type timeout: int
     :type localPrivKey: str
@@ -249,14 +250,14 @@ def runCommandOnHost(hostname, command,
     return exitCode, stdoutLines, stderrLines
 
 
-def checkSshOnHost(hostname, username = "root", localPrivKey = None, timeout = None):
+def checkSshOnHost(hostname, username="root", localPrivKey=None, timeout=None):
     """
     :type timeout: float
     :rtype : bool
     """
     try:
         LOG("Checking SSH for %s@%s" % (username, hostname))
-        ssh = newSshClient(hostname, username=username, localPrivKey=localPrivKey, timeout=timeout) # 10 sec timeout
+        ssh = newSshClient(hostname, username=username, localPrivKey=localPrivKey, timeout=timeout)  # 10 sec timeout
     except Exception as e:
         LOG(">> No SSH for %s@%s" % (username, hostname))
         LOGSshException(username, hostname, e)
@@ -310,23 +311,23 @@ class OkeanosNativeClient(object):
         instanceInfoList = []
         servers = self.cycladesClient.list_servers()
         for server in servers:
-            serverId = str(server[u'id']) # It is a number in the result
-            serverDetails  = self.cycladesClient.get_server_details(serverId)
+            serverId = str(server[u'id'])  # It is a number in the result
+            serverDetails = self.cycladesClient.get_server_details(serverId)
             serverStatusS = serverDetails[u'status']
             serverStatus = NodeStatus(serverStatusS)
-            #serverFlavourId = serverDetails[u'flavor'][u'id']
-            #serverImageId = serverDetails[u'image'][u'id']
+            # serverFlavourId = serverDetails[u'flavor'][u'id']
+            # serverImageId = serverDetails[u'image'][u'id']
             instanceInfo = ListNodeResult(serverId, serverStatus, serverDetails)
             instanceInfoList.append(instanceInfo)
         return instanceInfoList
 
     def createNode(self, nodeName, flavorIdOrName, imageId,
-                   sshPubKey = None,
-                   initScriptPathAndData = None,
-                   remoteUsername = "root",
-                   remoteUsergroup = None,
-                   localPubKeyData = None,
-                   createAsyncInitScript = True):
+                   sshPubKey=None,
+                   initScriptPathAndData=None,
+                   remoteUsername="root",
+                   remoteUsergroup=None,
+                   localPubKeyData=None,
+                   createAsyncInitScript=True):
         """
 
         :rtype : NodeDetails
@@ -363,11 +364,11 @@ class OkeanosNativeClient(object):
         import base64
         personality = [
             dict(
-                contents = base64.b64encode(authorized_keys),
-                path = "/%s/.ssh/authorized_keys" % remoteUsername,
-                owner = remoteUsername,
-                group = remoteUsergroup,
-                mode = 0600
+                contents=base64.b64encode(authorized_keys),
+                path="/%s/.ssh/authorized_keys" % remoteUsername,
+                owner=remoteUsername,
+                group=remoteUsergroup,
+                mode=0600
             )
         ]
 
@@ -376,11 +377,11 @@ class OkeanosNativeClient(object):
 
             personality.append(
                 dict(
-                    contents = base64.b64encode(initScriptData),
-                    path = initScriptPath,
-                    owner = remoteUsername,
-                    group = remoteUsergroup,
-                    mode = 0777
+                    contents=base64.b64encode(initScriptData),
+                    path=initScriptPath,
+                    owner=remoteUsername,
+                    group=remoteUsergroup,
+                    mode=0777
                 )
             )
 
@@ -392,11 +393,11 @@ class OkeanosNativeClient(object):
 
                 personality.append(
                     dict(
-                        contents = base64.b64encode(asyncInitScriptData),
-                        path = asyncInitScriptPath,
-                        owner = remoteUsername,
-                        group = remoteUsergroup,
-                        mode = 0777
+                        contents=base64.b64encode(asyncInitScriptData),
+                        path=asyncInitScriptPath,
+                        owner=remoteUsername,
+                        group=remoteUsergroup,
+                        mode=0777
                     )
                 )
             else:
@@ -414,18 +415,18 @@ class OkeanosNativeClient(object):
         resultDict = self.cycladesClient.create_server(nodeName, flavorId, imageId, personality=personality)
         # No IP is included in this result
         nodeDetails = NodeDetails(resultDict,
-                                  sshPubKey = sshPubKey,
-                                  initScriptPath = initScriptPath,
-                                  initScriptData = initScriptData,
-                                  asyncInitScriptPath = asyncInitScriptPath)
+                                  sshPubKey=sshPubKey,
+                                  initScriptPath=initScriptPath,
+                                  initScriptData=initScriptData,
+                                  asyncInitScriptPath=asyncInitScriptPath)
         LOG("Created node %s status %s, adminPass = %s, ip4s = %s" % (nodeDetails.id, nodeDetails.status.okeanosStatus, nodeDetails.adminPass, nodeDetails.ipv4s))
         return nodeDetails
 
     def runCommandOnNode(self, nodeDetails, command,
                          username='root',
-                         localPrivKey = None,
-                         timeout = None,
-                         runSynchronously = True):
+                         localPrivKey=None,
+                         timeout=None,
+                         runSynchronously=True):
         """
         :type timeout: int
         :type localPrivKey: str
@@ -439,11 +440,11 @@ class OkeanosNativeClient(object):
                                 timeout=timeout,
                                 runSynchronously=runSynchronously)
 
-    def checkSshOnNode(self, nodeDetails, username = "root", localPrivKey = None, timeout = None):
+    def checkSshOnNode(self, nodeDetails, username="root", localPrivKey=None, timeout=None):
         hostname = nodeDetails.ipv4s[0]
         return checkSshOnHost(hostname, username=username, localPrivKey=localPrivKey, timeout=timeout)
 
-    def waitSshOnHost(self, hostname, username = "root", localPrivKey = None, timeout = None):
+    def waitSshOnHost(self, hostname, username="root", localPrivKey=None, timeout=None):
         t0 = time.time()
         while True:
             if checkSshOnHost(hostname, username=username, localPrivKey=localPrivKey, timeout=timeout):
@@ -452,7 +453,7 @@ class OkeanosNativeClient(object):
                 LOG("SSH good for %s@%s after %s sec" % (username, hostname, dtsec))
                 break
 
-    def waitSshOnNode(self, nodeDetails, username = "root", localPrivKey = None, timeout = None):
+    def waitSshOnNode(self, nodeDetails, username="root", localPrivKey=None, timeout=None):
         hostname = nodeDetails.ipv4s[0]
         self.waitSshOnHost(hostname, username=username, localPrivKey=localPrivKey, timeout=timeout)
 
@@ -479,9 +480,9 @@ class OkeanosNativeClient(object):
         LOG("Node %s status %s after %s sec" % (nodeId, expectedOkeanosStatus, dtsec))
         return nodeDetails
 
-    def createNodeAndWait(self, nodeName, flavorIdOrName, imageId, sshPubKey, initScriptPathAndData = None,
-                          remoteUsername = "root", remoteUsergroup = None, localPubKeyData = None, localPrivKey = None,
-                          sshTimeout = None, runInitScriptSynchronously = False):
+    def createNodeAndWait(self, nodeName, flavorIdOrName, imageId, sshPubKey, initScriptPathAndData=None,
+                          remoteUsername="root", remoteUsergroup=None, localPubKeyData=None, localPrivKey=None,
+                          sshTimeout=None, runInitScriptSynchronously=False):
         """
         :type runInitScriptSynchronously: bool
         :type sshPubKey: str
@@ -495,10 +496,10 @@ class OkeanosNativeClient(object):
 
         # Note that this returned value (NodeDetails) contains the adminPass
         nodeDetails = self.createNode(nodeName, flavorIdOrName, imageId, sshPubKey,
-                                      initScriptPathAndData = initScriptPathAndData,
-                                      remoteUsername = remoteUsername,
-                                      remoteUsergroup = remoteUsergroup,
-                                      localPubKeyData = localPubKeyData)
+                                      initScriptPathAndData=initScriptPathAndData,
+                                      remoteUsername=remoteUsername,
+                                      remoteUsergroup=remoteUsergroup,
+                                      localPubKeyData=localPubKeyData)
         nodeId = nodeDetails.id
         nodeDetailsActive = self.waitNodeStatus(nodeId, NodeStatus.ACTIVE)
         nodeDetails.updateIPsAndStatusFrom(nodeDetailsActive)
