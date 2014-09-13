@@ -20,8 +20,8 @@ from optparse import OptionParser
 import os
 
 from slipstream.SlipStreamHttpClient import UserInfo
-from sliplstream_okeanos import OkeanosNativeClient
-from sliplstream_okeanos.OkeanosClientCloud import OkeanosClientCloud
+from slipstream_okeanos import OkeanosNativeClient
+from slipstream_okeanos.OkeanosClientCloud import OkeanosClientCloud
 
 
 class OkeanosCommand(object):
