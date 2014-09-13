@@ -31,9 +31,9 @@ okeanos.auth_url = https://accounts.okeanos.grnet.gr/identity/v2.0
 okeanos.user.uuid = <uuid>
 okeanos.token = <token>
 # image
-okeanos.imageid = 6b1c431a-d18c-4609-b4d9-3f29acce2c1f
-okeanos.image.platform = ubuntu
-okeanos.image.loginuser = ubuntu
+okeanos.imageid = <image_id>
+okeanos.image.platform = <platform>
+okeanos.image.loginuser = <user>
 okeanos.instance.type = C2R2048D10ext_vlmc
 """
 
@@ -128,7 +128,7 @@ lvs
         self._init_connector()
         self._start_wait_running_stop_images()
 
-    def test_2_buildImage(self):
+    def xtest_2_buildImage(self):
         self._init_connector(run_category=RUN_CATEGORY_IMAGE)
 
         try:
