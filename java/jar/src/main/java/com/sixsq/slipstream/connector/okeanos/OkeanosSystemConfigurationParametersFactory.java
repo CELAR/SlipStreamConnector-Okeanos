@@ -9,9 +9,9 @@ package com.sixsq.slipstream.connector.okeanos;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,9 +29,7 @@ import java.util.logging.Logger;
 import static java.lang.String.format;
 
 public class OkeanosSystemConfigurationParametersFactory extends SystemConfigurationParametersFactoryBase {
-    private static Logger log = Logger.getLogger(OkeanosSystemConfigurationParametersFactory.class.toString());
-
-    public static final String OKEANOSLIBS_URL_PARAMETER_NAME = "libs.url";
+	private static Logger log = Logger.getLogger(OkeanosSystemConfigurationParametersFactory.class.toString());
 
 	public OkeanosSystemConfigurationParametersFactory(String connectorInstanceName)
 			throws ValidationException {
@@ -68,21 +66,16 @@ public class OkeanosSystemConfigurationParametersFactory extends SystemConfigura
         );
     }
 
-    protected void putMandatoryLibsUrl() throws ValidationException {
-        putMandatoryParameter(
-            constructKey(OkeanosSystemConfigurationParametersFactory.OKEANOSLIBS_URL_PARAMETER_NAME),
-            "URL of the python okeanos libraries (usually a tar.gz of kamaki and all of its dependencies)",
-            "/downloads/okeanoslibs.tar.gz"
-        );
-    }
-
     @Override
 	protected void initReferenceParameters() throws ValidationException {
-        log.entering(OkeanosSystemConfigurationParametersFactory.class.getSimpleName(), "initReferenceParameters");
+
+    	super.initReferenceParameters();
+    	putMandatoryUpdateUrl();
+
+    	log.entering(OkeanosSystemConfigurationParametersFactory.class.getSimpleName(), "initReferenceParameters");
         putMandatoryOrchestrationImageId();
 		putMandatoryEndpoint();
-        putMandatoryLibsUrl();
-		
+
 		putMandatoryParameter(
             constructKey(OkeanosUserParametersFactory.ORCHESTRATOR_INSTANCE_TYPE_PARAMETER_NAME),
             "Okeanos flavor for the orchestrator. The actual image should support the desired Flavor",
