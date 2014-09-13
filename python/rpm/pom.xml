@@ -132,7 +132,7 @@
                           </sources>
                         </mapping>
 
-                        <!-- mapping>
+                        <mapping>
                             <directory>/usr/bin</directory>
                             <sources>
                                 <softlinkSource>
@@ -145,7 +145,7 @@
                                     <location>${slipstream.base.dir}/connectors/bin/okeanos-terminate-instances</location>
                                 </softlinkSource>
                             </sources>
-                        </mapping -->
+                        </mapping>
 
                         <mapping>
                           <directory>/usr/lib/python2.6/site-packages</directory>
