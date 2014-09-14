@@ -88,26 +88,20 @@
 					<mappings>
 
 						<mapping>
-              <directory>${jetty.lib.ext.dir}/okeanos</directory>
+                            <directory>${jetty.connector.dir}</directory>
 							<filemode>644</filemode>
-							<username>root</username>
-							<groupname>root</groupname>
+							<username>slipstream</username>
+							<groupname>slipstream</groupname>
 							<directoryIncluded>false</directoryIncluded>
 							<sources>
 								<source>
-                  <location>target/dependency/jars/${connector.artefactId}-${project.version}.jar</location>
+                                    <location>${project.build.directory}/dependency/jars/${connector.artefactId}-${project.version}.jar</location>
 									<destination>slipstream-connector-okeanos.jar</destination>
 								</source>
 							</sources>
 						</mapping>
 
 					</mappings>
-
-          <postinstallScriptlet>
-            <script>
-/bin/cp -f ${jetty.lib.ext.dir}/okeanos/* ${slipstream.war.web-inf.lib.dir}
-            </script>
-          </postinstallScriptlet>
 
 				</configuration>
 
