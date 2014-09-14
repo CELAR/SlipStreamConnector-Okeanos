@@ -23,7 +23,7 @@ public class OkeanosConnector extends CliConnectorBase {
     public static final String ClassName = OkeanosConnector.class.getName();
     private static Logger log = Logger.getLogger(ClassName);
     public static final String CLOUD_SERVICE_NAME = "okeanos";
-    public static final String CLOUDCONNECTOR_PYTHON_MODULENAME = "slipstream.cloudconnectors.okeanos.OkeanosClientCloud";
+    public static final String CLOUDCONNECTOR_PYTHON_MODULENAME = "slipstream_okeanos.OkeanosClientCloud";
 
     public static final String COMMAND_DESCRIBE_INSTANCES  = format("%s/okeanos-describe-instances", CLI_LOCATION);
     public static final String COMMAND_RUN_INSTANCES       = format("%s/okeanos-run-instances", CLI_LOCATION);
