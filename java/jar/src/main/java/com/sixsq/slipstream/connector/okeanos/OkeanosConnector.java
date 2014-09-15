@@ -370,7 +370,7 @@ public class OkeanosConnector extends CliConnectorBase {
 
             nl().
             comment("First update the system").
-            commandL("export DEBIAN_FRONTEND=noninteractive").
+            command("export DEBIAN_FRONTEND=noninteractive").
             commandL("aptitude", "update").
 
             nl().
