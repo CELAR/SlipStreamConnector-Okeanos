@@ -394,6 +394,18 @@ public class OkeanosConnector extends CliConnectorBase {
             command("mkdir", "-p", SLIPSTREAM_REPORT_DIR).
 
             nl().
+            fstrack("3.kamaki-install.start").
+
+            nl().
+            comment("Install pip & kamaki").
+            commandL("aptitude", "install", "-y", "python-pip"). // FIXME this assumes 'aptitude' => Debian-based
+            commandL("pip", "install", "--upgrade", "pip"). // To get a more recent version (like 1.5.6)
+            commandL("hash", "-d", "pip", "&&", "pip", "install", "-v", "kamaki").
+
+            nl().
+            fstrack("3.kamaki-install.stop").
+
+            nl().
             fstrack("4.keypair-gen.start").
 
             nl().
