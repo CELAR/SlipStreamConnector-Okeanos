@@ -370,7 +370,7 @@ public class OkeanosConnector extends CliConnectorBase {
 
             nl().
             comment("First update the system").
-            command("export DEBIAN_FRONTEND=noninteractive").
+            export("DEBIAN_FRONTEND", "noninteractive").
             commandL("aptitude", "update").
 
             nl().
@@ -402,6 +402,12 @@ public class OkeanosConnector extends CliConnectorBase {
             commandL("pip", "install", "--upgrade", "pip"). // To get a more recent version (like 1.5.6)
             commandL("/usr/local/bin/pip", "install", "-v", "kamaki").
 
+            command("aptitude", "-y", "install", "python-software-properties", "||", "aptitude", "-y", "install", "software-properties-common").
+            commandL("apt-add-repository", "-y", "ppa:grnet/synnefo").
+            commandL("aptitude", "update").
+            commandL("aptitude", "-y", "install", "snf-image-creator").
+            command("libguestfs-test-tool", "||", "update-guestfs-appliance", "||", "true").
+
             nl().
             fstrack("3.kamaki-install.stop").
 
@@ -410,7 +416,7 @@ public class OkeanosConnector extends CliConnectorBase {
 
             nl().
             comment("Generate keypair").
-            commandL("ssh-keygen", "-t", "rsa", "-N", "", "-f", "~/.ssh/id_rsa", "<", "/dev/null", "||", "true").
+            command("ssh-keygen", "-t", "rsa", "-N", "", "-f", "~/.ssh/id_rsa", "<", "/dev/null", "||", "true").
 
             nl().
             fstrack("4.keypair-gen.stop").
