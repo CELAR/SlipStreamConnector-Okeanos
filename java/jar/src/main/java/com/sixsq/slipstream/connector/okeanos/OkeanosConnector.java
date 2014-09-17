@@ -29,6 +29,9 @@ public class OkeanosConnector extends CliConnectorBase {
     public static final String COMMAND_RUN_INSTANCES       = format("%s/okeanos-run-instances", CLI_LOCATION);
     public static final String COMMAND_TERMINATE_INSTANCES = format("%s/okeanos-terminate-instances", CLI_LOCATION);
 
+    public static final String BOOTSTRAP_PATH = "/tmp/slipstream.bootstrap";
+    public static final String LOG_FILENAME = "orchestrator.slipstream.log";
+
     public OkeanosConnector() { this(OkeanosConnector.CLOUD_SERVICE_NAME); }
 
     public OkeanosConnector(String instanceName) { super(instanceName); }
@@ -214,30 +217,100 @@ public class OkeanosConnector extends CliConnectorBase {
                 ImageModule.load(run.getModuleResourceUrl()));
     }
 
-    class Script {
-        final StringBuilder sb = new StringBuilder();
+    // sequential, non-overlapping begin-end counters.
+    interface Counter { int value(); String name(); }
+    class MasterCounter implements Counter {
+        int value;
+        final String name;
+        MasterCounter(int value, String name) { this.value = value; this.name = name; }
+        MasterCounter(int value) { this(value, "master"); }
+        public int value() { return value; }
+        public String name() { return name; }
+        void next() { value++; }
+        BeginCounter begin(String name) { return new BeginCounter(this, name);}
+    }
+    class BeginCounter implements Counter {
+        final MasterCounter master;
+        final String name;
+        BeginCounter(MasterCounter master, String name) { this.master = master; this.name = name; }
+        public int value() { master.next(); return master.value(); } //
+        public String name() { return name; }
+
+        EndCounter end() { return new EndCounter(master, this.name); }
+    }
+    class EndCounter implements Counter {
+        final MasterCounter master;
+        final String name;
+        EndCounter(MasterCounter master, String name) { this.master = master; this.name = name; }
+        public int value() { return master.value(); }
+        public String name() { return name; }
+    }
+
+    interface Line { String apply(); }
+    class NewLine implements Line { public String apply() { return "\n"; } }
+
+    class RawLine implements Line {
+        private final String rawLine;
+
+        RawLine(String rawLine) { this.rawLine = rawLine; }
+
+        public String apply() { return rawLine; }
+    }
+
+    class CounterLine implements Line {
+        final String before;
+        final Counter counter;
+        final String after;
+
+        CounterLine(String before, Counter counter, String after) {
+            this.before = before;
+            this.counter = counter;
+            this.after = after;
+        }
+
+        public String apply() { return before + counter.value() + after + "\n"; } //
+    }
+
+    final Line NL = new NewLine();
+
+    class Script implements Line {
+        final List<Line> lines = new ArrayList<>();
+        final String logdir;
+        final String logfilename;
         final String logfilepath;
 
-        Script(String logfilepath) {
-            this.logfilepath = logfilepath;
+        Script(String logdir, String logfilename) {
+            this.logdir = logdir;
+            this.logfilename = logfilename;
+            this.logfilepath = logdir + "/" + logfilename;
+        }
+
+        Script similar() {
+            return new Script(this.logdir, this.logfilename);
+        }
+
+        private Script add(Line line) {
+            lines.add(line);
+            return this;
         }
 
         Script comment(String comment) {
-            sb.append(format("# %s\n", comment));
+            add(new RawLine(format("# %s\n", comment)));
             return this;
         }
 
         Script export(String name, String value) {
-            sb.append(format("export %s=\"%s\"\n", name, value));
+            add(new RawLine(format("export %s=\"%s\"\n", name, value)));
             return this;
         }
 
         Script nl() {
-            sb.append("\n");
-            return this;
+            return add(NL);
         }
 
         Script command(String ...args) {
+            final StringBuilder sb = new StringBuilder();
+
             for(int i = 0; i < args.length; i++) {
                 final String arg = args[i];
                 if(arg.trim().isEmpty()) {
@@ -252,12 +325,11 @@ public class OkeanosConnector extends CliConnectorBase {
             }
             if(args.length > 0) { sb.append('\n'); }
 
-            return this;
+            return add(new RawLine(sb.toString()));
         }
 
-        Script raw(String s) {
-            sb.append(s);
-            return this;
+        Script hashbang(String hb) {
+            return add(new RawLine("#!" + hb + "\n"));
         }
 
         Script log(String... args) {
@@ -293,13 +365,44 @@ public class OkeanosConnector extends CliConnectorBase {
         }
 
         // Track progress in filesystem
-        Script fstrack(String fileSuffix) {
-            return command("echo", "$$ `date`", ">", "`dirname $0`/$0.$$." + fileSuffix);
+        Script fstrack(Counter counter, String fileSuffix) {
+            final String before = "echo $$ `date` > `dirname $0`/$0.$$.";
+            final String after  = "." + counter.name() + fileSuffix;
+            return add(new CounterLine(before, counter, after));
         }
 
+        Script fstrackBegin(BeginCounter counter) {
+            return fstrack(counter, ".start");
+        }
+
+        Script fstrackEnd(EndCounter counter) {
+            return fstrack(counter, ".stop");
+        }
+
+        Script include(Script other) {
+            return add(other);
+        }
+
+        Script includeIf(boolean condition, Script onTrue, Script onFalse) {
+            if(condition) {
+                return include(onTrue);
+            }
+            else {
+                return include(onFalse);
+            }
+        }
+
+        public String apply() {
+            final StringBuilder sb = new StringBuilder(30 * lines.size());
+            for(Line line : lines) {
+                sb.append(line.apply());
+            }
+
+            return sb.toString();
+        }
 
         @Override
-        public String toString() { return sb.toString(); }
+        public String toString() { return apply(); }
     }
 
     @Override
@@ -311,32 +414,34 @@ public class OkeanosConnector extends CliConnectorBase {
 
         final Configuration configuration = Configuration.getInstance();
 
-        final String logfilename = "orchestrator.slipstream.log";
-        final String logfilepath = SLIPSTREAM_REPORT_DIR + "/" + logfilename;
-        final String StderrToStdout = "2>&1";
-        final String bootstrap = "/tmp/slipstream.bootstrap";
         final String username = user.getName();
 
         final String[] bootstrapCmdline;
         final String nodename;
-        if(isInOrchestrationContext(run)){
-            bootstrapCmdline = new String[]{bootstrap, "slipstream-orchestrator"};
+        final boolean inOrchestrationContext = isInOrchestrationContext(run);
+        if(inOrchestrationContext){
+            bootstrapCmdline = new String[]{BOOTSTRAP_PATH, "slipstream-orchestrator"};
             nodename = getOrchestratorName(run);
         } else {
-            bootstrapCmdline = new String[]{bootstrap};
+            bootstrapCmdline = new String[]{BOOTSTRAP_PATH};
             nodename = Run.MACHINE_NAME;
         }
 
-        final Script script = new Script(logfilepath).
-            raw("#!/bin/sh -e\n").
-            comment("+ Slipstream contextualization script for ~Okeanos").
+        final Script script = new Script(SLIPSTREAM_REPORT_DIR, LOG_FILENAME);
+        final Script defineExports = script.similar();
+        final Script doOrchestratorStaff = script.similar();
+        final Script doNonOrchestratorStaff = script.similar();
+        final Script runBootstrap = script.similar();
 
-            nl().
-            logBegin().
-            comment("When did we launch?").
-            fstrack("1.BEGIN").
+        final MasterCounter masterCounter = new MasterCounter(0);
+        final BeginCounter packageUpdateCounter = masterCounter.begin("package-update");
+        final BeginCounter debugInstallCounter = masterCounter.begin("debug-install");
+        final BeginCounter pipInstallCounter = masterCounter.begin("pip-install");
+        final BeginCounter kamakiInstallCounter = masterCounter.begin("kamaki-install");
+        final BeginCounter keypairGenCounter = masterCounter.begin("keypair-gen");
+        final BeginCounter bootstrappingCounter = masterCounter.begin("bootstrapping");
 
-            nl().
+        defineExports.
             export("SLIPSTREAM_CLOUD", getCloudServiceName()).
             export("SLIPSTREAM_CONNECTOR_INSTANCE", getConnectorInstanceName()).
             export("SLIPSTREAM_NODENAME", nodename).
@@ -349,30 +454,22 @@ public class OkeanosConnector extends CliConnectorBase {
             export("SLIPSTREAM_USERNAME",           username).
             export("SLIPSTREAM_COOKIE",             getCookieForEnvironmentVariable(username, run.getUuid())).
             export("SLIPSTREAM_VERBOSITY_LEVEL",    getVerboseParameterValue(user)).
-
             nl().
-            // NOTE We do not need libcloud for okeanos, so this can be skipped?
             export("CLOUDCONNECTOR_BUNDLE_URL", configuration.getRequiredProperty(constructKey(UserParametersFactoryBase.UPDATE_CLIENTURL_PARAMETER_NAME))).
             export("CLOUDCONNECTOR_PYTHON_MODULENAME", CLOUDCONNECTOR_PYTHON_MODULENAME).
             export("OKEANOS_SERVICE_TYPE", configuration.getRequiredProperty(constructKey(OkeanosUserParametersFactory.SERVICE_TYPE_PARAMETER_NAME))).
             export("OKEANOS_SERVICE_NAME", configuration.getRequiredProperty(constructKey(OkeanosUserParametersFactory.SERVICE_NAME_PARAMETER_NAME))).
-            export("OKEANOS_SERVICE_REGION", configuration.getRequiredProperty(constructKey(OkeanosUserParametersFactory.SERVICE_REGION_PARAMETER_NAME))).
+            export("OKEANOS_SERVICE_REGION", configuration.getRequiredProperty(constructKey(OkeanosUserParametersFactory.SERVICE_REGION_PARAMETER_NAME)))
+        ;
 
-//            nl().
-//            comment("This is for testing purposes from the command-line, technically not needed in production").
-//            export("PYTHONPATH",                "/opt/slipstream/client/lib").
-//            comment("Also for testing purposes. These are defined in " + bootstrap + " as it is deployed from this script").
-//            export("SLIPSTREAM_CLIENT_HOME", "/opt/slipstream/client").
-//            export("SLIPSTREAM_HOME", "/opt/slipstream/client/sbin").
-
-            nl().
-            fstrack("2.debug-install.start").
-
-            nl().
+        doOrchestratorStaff.
             comment("First update the system").
-            command("export DEBIAN_FRONTEND=noninteractive").
+            export("DEBIAN_FRONTEND", "noninteractive").
+            fstrackBegin(packageUpdateCounter).
             commandL("aptitude", "update").
-
+            fstrackEnd(packageUpdateCounter.end()).
+            nl().
+            fstrackBegin(debugInstallCounter).
             nl().
             comment("Some extra debugging aids for the command line. Also not needed in production.").
             commandL("aptitude", "install", "-y", "zsh", "git", "atool", "htop").
@@ -386,74 +483,72 @@ public class OkeanosConnector extends CliConnectorBase {
             command("ln -s \"${ZDOTDIR:-$HOME}\"/.zprezto/runcoms/zshrc ~/.zshrc").
             command("echo \"alias ll='ls -al --color'\" >> ~/.zshrc").
             command("echo \"alias psg='ps -ef | grep -i'\" >> ~/.zshrc").
-
             nl().
-            fstrack("2.debug-install.stop").
+            fstrackEnd(debugInstallCounter.end()).
 
             nl().
             command("mkdir", "-p", SLIPSTREAM_REPORT_DIR).
 
             nl().
-            fstrack("3.kamaki-install.start").
-
-            nl().
             comment("Install pip & kamaki").
+            fstrackBegin(pipInstallCounter).
             commandL("aptitude", "install", "-y", "python-pip"). // FIXME this assumes 'aptitude' => Debian-based
             commandL("pip", "install", "--upgrade", "pip"). // To get a more recent version (like 1.5.6)
+            fstrackEnd(pipInstallCounter.end()).
+
+            nl().
+            fstrackBegin(kamakiInstallCounter).
             commandL("/usr/local/bin/pip", "install", "-v", "kamaki").
+            command("aptitude", "-y", "install", "python-software-properties", "||", "aptitude", "-y", "install", "software-properties-common").
+            commandL("apt-add-repository", "-y", "ppa:grnet/synnefo").
+            commandL("aptitude", "update").
+            commandL("aptitude", "-y", "install", "snf-image-creator").
+            command("libguestfs-test-tool", "||", "update-guestfs-appliance", "||", "true").
+            nl().
+            fstrackEnd(kamakiInstallCounter.end()).
 
             nl().
-            fstrack("3.kamaki-install.stop").
-
-            nl().
-            fstrack("4.keypair-gen.start").
-
+            fstrackBegin(keypairGenCounter).
             nl().
             comment("Generate keypair").
-            commandL("ssh-keygen", "-t", "rsa", "-N", "", "-f", "~/.ssh/id_rsa", "<", "/dev/null", "||", "true").
-
+            command("ssh-keygen", "-t", "rsa", "-N", "", "-f", "~/.ssh/id_rsa", "<", "/dev/null", "||", "true").
             nl().
-            fstrack("4.keypair-gen.stop").
+            fstrackEnd(keypairGenCounter.end())
+        ;
 
-            nl().
-            logBegin("Downloading", "$SLIPSTREAM_BOOTSTRAP_BIN", "to", bootstrap).
-            command(
+        runBootstrap.
+            logBegin("Downloading", "$SLIPSTREAM_BOOTSTRAP_BIN", "to", BOOTSTRAP_PATH).
+            commandL(
                 "wget", "--secure-protocol=SSLv3", "--no-check-certificate", "-O",
-                bootstrap,
-                "$SLIPSTREAM_BOOTSTRAP_BIN",
-                StderrToStdout, "|", "tee", "-a", logfilepath,
-                "&&",
-                "chmod", "0755", bootstrap).
-            logEnd("Downloading", "$SLIPSTREAM_BOOTSTRAP_BIN", "to", bootstrap).
-
+                BOOTSTRAP_PATH,
+                "$SLIPSTREAM_BOOTSTRAP_BIN").
+            command("chmod", "0755", BOOTSTRAP_PATH).
+            logEnd("Downloading", "$SLIPSTREAM_BOOTSTRAP_BIN", "to", BOOTSTRAP_PATH).
             nl().
-            comment("A few more stuff before " + bootstrap).
-            comment("python-dev and gcc").
-
-            nl().
-            comment("Install python-dev").
-            commandL("aptitude", "install", "-y", "python-dev").
-
-            nl().
-            comment("We need a C compiler (and specifically, paramiko needs gcc) before we run " + bootstrap).
-            commandL("aptitude", "install", "-y", "gcc"). // FIXME this assumes 'aptitude' => Debian-based
-
-            nl().
-            fstrack("5.bootstrap.start").
-
+            fstrackBegin(bootstrappingCounter).
             nl().
             commandL(bootstrapCmdline).
-
             nl().
-            fstrack("5.bootstrap.stop").
+            fstrackEnd(bootstrappingCounter.end())
+        ;
 
+        // Finally, the actual, assembled contextualization script
+        script.
+            hashbang("/bin/bash").
+            comment("+ Slipstream contextualization script for ~Okeanos").
             nl().
-            fstrack("6.END").
+            command("mkdir -p /tmp/slipstream/reports").
+            nl().
+            logBegin().
+                include(defineExports).
+                nl().
+                includeIf(inOrchestrationContext, doOrchestratorStaff, doNonOrchestratorStaff).
+                include(runBootstrap).
+                nl().
             logEnd().
-
             nl().
             comment("- Slipstream contextualization script for ~Okeanos")
-            ;
+        ;
 
         return script.toString();
     }
