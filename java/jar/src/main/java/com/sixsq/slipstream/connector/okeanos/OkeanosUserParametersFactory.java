@@ -34,8 +34,8 @@ public class OkeanosUserParametersFactory extends UserParametersFactoryBase {
 
 	@Override
 	protected void initReferenceParameters() throws ValidationException {
-		putMandatoryParameter(KEY_PARAMETER_NAME, "Username");
-		putMandatoryPasswordParameter(SECRET_PARAMETER_NAME, "Token");
+		putMandatoryParameter(KEY_PARAMETER_NAME, "Okeanos UUID");
+		putMandatoryPasswordParameter(SECRET_PARAMETER_NAME, "Okeanos Token");
 	}
 
 }

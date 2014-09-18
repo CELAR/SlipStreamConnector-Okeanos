@@ -52,7 +52,7 @@ public class OkeanosSystemConfigurationParametersFactory extends SystemConfigura
     protected void putMandatoryEndpoint() throws ValidationException {
         putMandatoryParameter(
             super.constructKey(UserParametersFactoryBase.ENDPOINT_PARAMETER_NAME),
-            "Service endpoint for " + getCategory() + " (e.g. https://accounts.okeanos.grnet.gr/identity/v2.0)",
+            "Service endpoint for " + getCategory(),
             "https://accounts.okeanos.grnet.gr/identity/v2.0"
         );
     }
@@ -62,7 +62,7 @@ public class OkeanosSystemConfigurationParametersFactory extends SystemConfigura
         putMandatoryParameter(
             super.constructKey(UserParametersFactoryBase.ORCHESTRATOR_IMAGEID_PARAMETER_NAME),
             "Image Id of the orchestrator for " + getCategory(),
-            "6b1c431a-d18c-4609-b4d9-3f29acce2c1f"
+            "fe31fced-a3cf-49c6-b43b-f58f5235ba45"
         );
     }
 

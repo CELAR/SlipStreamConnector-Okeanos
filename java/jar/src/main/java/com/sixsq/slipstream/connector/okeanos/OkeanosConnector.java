@@ -217,64 +217,8 @@ public class OkeanosConnector extends CliConnectorBase {
                 ImageModule.load(run.getModuleResourceUrl()));
     }
 
-    // sequential, non-overlapping begin-end counters.
-    interface Counter { int value(); String name(); }
-    class MasterCounter implements Counter {
-        int value;
-        final String name;
-        MasterCounter(int value, String name) { this.value = value; this.name = name; }
-        MasterCounter(int value) { this(value, "master"); }
-        public int value() { return value; }
-        public String name() { return name; }
-        void next() { value++; }
-        BeginCounter begin(String name) { return new BeginCounter(this, name);}
-    }
-    class BeginCounter implements Counter {
-        final MasterCounter master;
-        final String name;
-        BeginCounter(MasterCounter master, String name) { this.master = master; this.name = name; }
-        public int value() { master.next(); return master.value(); } //
-        public String name() { return name; }
-
-        EndCounter end() { return new EndCounter(master, this.name); }
-    }
-    class EndCounter implements Counter {
-        final MasterCounter master;
-        final String name;
-        EndCounter(MasterCounter master, String name) { this.master = master; this.name = name; }
-        public int value() { return master.value(); }
-        public String name() { return name; }
-    }
-
-    interface Line { String apply(); }
-    class NewLine implements Line { public String apply() { return "\n"; } }
-
-    class RawLine implements Line {
-        private final String rawLine;
-
-        RawLine(String rawLine) { this.rawLine = rawLine; }
-
-        public String apply() { return rawLine; }
-    }
-
-    class CounterLine implements Line {
-        final String before;
-        final Counter counter;
-        final String after;
-
-        CounterLine(String before, Counter counter, String after) {
-            this.before = before;
-            this.counter = counter;
-            this.after = after;
-        }
-
-        public String apply() { return before + counter.value() + after + "\n"; } //
-    }
-
-    final Line NL = new NewLine();
-
-    class Script implements Line {
-        final List<Line> lines = new ArrayList<>();
+    class Script {
+        final StringBuilder text = new StringBuilder();
         final String logdir;
         final String logfilename;
         final String logfilepath;
@@ -289,23 +233,23 @@ public class OkeanosConnector extends CliConnectorBase {
             return new Script(this.logdir, this.logfilename);
         }
 
-        private Script add(Line line) {
-            lines.add(line);
+        private Script addnl(String line) {
+            text.append(line).append("\n");
             return this;
         }
 
         Script comment(String comment) {
-            add(new RawLine(format("# %s\n", comment)));
+            addnl(format("# %s", comment));
             return this;
         }
 
         Script export(String name, String value) {
-            add(new RawLine(format("export %s=\"%s\"\n", name, value)));
+            addnl(format("export %s=\"%s\"", name, value));
             return this;
         }
 
         Script nl() {
-            return add(NL);
+            return addnl("");
         }
 
         Script command(String ...args) {
@@ -323,13 +267,12 @@ public class OkeanosConnector extends CliConnectorBase {
                 }
                 if(i < args.length) { sb.append(' '); }
             }
-            if(args.length > 0) { sb.append('\n'); }
 
-            return add(new RawLine(sb.toString()));
+            return addnl(sb.toString());
         }
 
         Script hashbang(String hb) {
-            return add(new RawLine("#!" + hb + "\n"));
+            return addnl("#!" + hb);
         }
 
         Script log(String... args) {
@@ -364,23 +307,8 @@ public class OkeanosConnector extends CliConnectorBase {
             return this;
         }
 
-        // Track progress in filesystem
-        Script fstrack(Counter counter, String fileSuffix) {
-            final String before = "echo $$ `date` > `dirname $0`/$0.$$.";
-            final String after  = "." + counter.name() + fileSuffix;
-            return add(new CounterLine(before, counter, after));
-        }
-
-        Script fstrackBegin(BeginCounter counter) {
-            return fstrack(counter, ".start");
-        }
-
-        Script fstrackEnd(EndCounter counter) {
-            return fstrack(counter, ".stop");
-        }
-
         Script include(Script other) {
-            return add(other);
+            return addnl(other.toString());
         }
 
         Script includeIf(boolean condition, Script onTrue, Script onFalse) {
@@ -392,17 +320,8 @@ public class OkeanosConnector extends CliConnectorBase {
             }
         }
 
-        public String apply() {
-            final StringBuilder sb = new StringBuilder(30 * lines.size());
-            for(Line line : lines) {
-                sb.append(line.apply());
-            }
-
-            return sb.toString();
-        }
-
         @Override
-        public String toString() { return apply(); }
+        public String toString() { return text.toString(); }
     }
 
     @Override
@@ -433,14 +352,6 @@ public class OkeanosConnector extends CliConnectorBase {
         final Script doNonOrchestratorStaff = script.similar();
         final Script runBootstrap = script.similar();
 
-        final MasterCounter masterCounter = new MasterCounter(0);
-        final BeginCounter packageUpdateCounter = masterCounter.begin("package-update");
-        final BeginCounter debugInstallCounter = masterCounter.begin("debug-install");
-        final BeginCounter pipInstallCounter = masterCounter.begin("pip-install");
-        final BeginCounter kamakiInstallCounter = masterCounter.begin("kamaki-install");
-        final BeginCounter keypairGenCounter = masterCounter.begin("keypair-gen");
-        final BeginCounter bootstrappingCounter = masterCounter.begin("bootstrapping");
-
         defineExports.
             export("SLIPSTREAM_CLOUD", getCloudServiceName()).
             export("SLIPSTREAM_CONNECTOR_INSTANCE", getConnectorInstanceName()).
@@ -462,58 +373,12 @@ public class OkeanosConnector extends CliConnectorBase {
             export("OKEANOS_SERVICE_REGION", configuration.getRequiredProperty(constructKey(OkeanosUserParametersFactory.SERVICE_REGION_PARAMETER_NAME)))
         ;
 
+        // Orchestrator is very stripped down now that we rely on CELAR-certified images.
+        // All needed functionality is builtin in the image.
         doOrchestratorStaff.
-            comment("First update the system").
-            export("DEBIAN_FRONTEND", "noninteractive").
-            fstrackBegin(packageUpdateCounter).
-            commandL("aptitude", "update").
-            fstrackEnd(packageUpdateCounter.end()).
-            nl().
-            fstrackBegin(debugInstallCounter).
-            nl().
-            comment("Some extra debugging aids for the command line. Also not needed in production.").
-            commandL("aptitude", "install", "-y", "zsh", "git", "atool", "htop").
-            commandL("chsh", "-s", "/bin/zsh").
-            commandL("git", "clone", "--recursive", "https://github.com/sorin-ionescu/prezto.git", "\"${ZDOTDIR:-$HOME}/.zprezto\"").
-            command("ln -s \"${ZDOTDIR:-$HOME}\"/.zprezto/runcoms/zlogin ~/.zlogin").
-            command("ln -s \"${ZDOTDIR:-$HOME}\"/.zprezto/runcoms/zlogout ~/.zlogout").
-            command("ln -s \"${ZDOTDIR:-$HOME}\"/.zprezto/runcoms/zpreztorc ~/.zpreztorc").
-            command("ln -s \"${ZDOTDIR:-$HOME}\"/.zprezto/runcoms/zprofile ~/.zprofile").
-            command("ln -s \"${ZDOTDIR:-$HOME}\"/.zprezto/runcoms/zshenv ~/.zshenv").
-            command("ln -s \"${ZDOTDIR:-$HOME}\"/.zprezto/runcoms/zshrc ~/.zshrc").
-            command("echo \"alias ll='ls -al --color'\" >> ~/.zshrc").
-            command("echo \"alias psg='ps -ef | grep -i'\" >> ~/.zshrc").
-            nl().
-            fstrackEnd(debugInstallCounter.end()).
-
-            nl().
-            command("mkdir", "-p", SLIPSTREAM_REPORT_DIR).
-
-            nl().
-            comment("Install pip & kamaki").
-            fstrackBegin(pipInstallCounter).
-            commandL("aptitude", "install", "-y", "python-pip"). // FIXME this assumes 'aptitude' => Debian-based
-            commandL("pip", "install", "--upgrade", "pip"). // To get a more recent version (like 1.5.6)
-            fstrackEnd(pipInstallCounter.end()).
-
-            nl().
-            fstrackBegin(kamakiInstallCounter).
-            commandL("/usr/local/bin/pip", "install", "-v", "kamaki").
-            command("aptitude", "-y", "install", "python-software-properties", "||", "aptitude", "-y", "install", "software-properties-common").
-            commandL("apt-add-repository", "-y", "ppa:grnet/synnefo").
-            commandL("aptitude", "update").
-            commandL("aptitude", "-y", "install", "snf-image-creator").
-            command("libguestfs-test-tool", "||", "update-guestfs-appliance", "||", "true").
-            nl().
-            fstrackEnd(kamakiInstallCounter.end()).
-
-            nl().
-            fstrackBegin(keypairGenCounter).
             nl().
             comment("Generate keypair").
-            command("ssh-keygen", "-t", "rsa", "-N", "", "-f", "~/.ssh/id_rsa", "<", "/dev/null", "||", "true").
-            nl().
-            fstrackEnd(keypairGenCounter.end())
+            command("ssh-keygen", "-t", "rsa", "-N", "", "-f", "~/.ssh/id_rsa", "<", "/dev/null", "||", "true")
         ;
 
         runBootstrap.
@@ -525,11 +390,7 @@ public class OkeanosConnector extends CliConnectorBase {
             command("chmod", "0755", BOOTSTRAP_PATH).
             logEnd("Downloading", "$SLIPSTREAM_BOOTSTRAP_BIN", "to", BOOTSTRAP_PATH).
             nl().
-            fstrackBegin(bootstrappingCounter).
-            nl().
-            commandL(bootstrapCmdline).
-            nl().
-            fstrackEnd(bootstrappingCounter.end())
+            commandL(bootstrapCmdline)
         ;
 
         // Finally, the actual, assembled contextualization script
