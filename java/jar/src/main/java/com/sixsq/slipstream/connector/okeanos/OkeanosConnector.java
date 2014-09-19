@@ -296,13 +296,11 @@ public class OkeanosConnector extends CliConnectorBase {
             return log(newArgs);
         }
 
-        // command with BEGIN-END logging
+        // command with logging
         Script commandL(String ...commandArgs) {
-            final List<String> enhancedList    = mkList(commandArgs, "2>&1", "|", "tee", "-a", logfilepath);
+            final List<String> enhancedList  = mkList(commandArgs, "2>&1", "|", "tee", "-a", logfilepath);
             final String[] enhancedArgs = toArray(enhancedList);
-//            logBegin(commandArgs);
             command(enhancedArgs);
-//            logEnd(commandArgs);
 
             return this;
         }
@@ -378,7 +376,20 @@ public class OkeanosConnector extends CliConnectorBase {
         doOrchestratorStaff.
             nl().
             comment("Generate keypair").
-            command("ssh-keygen", "-t", "rsa", "-N", "", "-f", "~/.ssh/id_rsa", "<", "/dev/null", "||", "true")
+            command("ssh-keygen", "-t", "rsa", "-N", "", "-f", "~/.ssh/id_rsa", "<", "/dev/null", "||", "true").
+            nl().
+            comment("Run an orchestrator-specific script").
+            // For a VM instance that plays the role of an orchestrator
+            commandL("[ -x /root/okeanos-orch-custom.sh ] && /root/okeanos-orch-custom.sh")
+        ;
+
+        doNonOrchestratorStaff.
+            nl().
+            comment("Run a node-specific script (for a node that is not started by an orchestrator)").
+            // Unfortunately (?), there is one more case to handle but it cannot be done here:
+            // A node that *is* started by an orchestrator. This is handled by python code
+            // so we must patch the respective python code (OkeanosClientCloud._get_init_script).
+            commandL("[ -x /root/okeanos-node-custom.sh ] && /root/okeanos-node-custom.sh")
         ;
 
         runBootstrap.
