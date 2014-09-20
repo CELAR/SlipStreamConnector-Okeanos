@@ -1,3 +1,5 @@
+import os
+import tempfile
 from kamaki.clients.astakos import AstakosClient
 from kamaki.clients.cyclades import CycladesClient
 import time
@@ -20,7 +22,6 @@ MyIP = GetIP()
 # noinspection PyBroadException
 def myHostnameAndIP():
     try:
-        raise Exception()
         hostname = socket.gethostname()
         ip = socket.gethostbyname(hostname)
         betterIP = MyIP.MyIP()
@@ -57,6 +58,7 @@ def LOGSshException(username, hostname, e, prefix=">> "):
 
 def loadRsaPrivKey(name="id_rsa"):
     """
+    :rtype : paramiko.rsakey.RSAKey
     :type name: str
     """
     import os.path as ospath
@@ -67,13 +69,25 @@ def loadRsaPrivKey(name="id_rsa"):
     return rsaKey
 
 
+def loadRsaPrivKeyData(name="id_rsa"):
+    """
+    :rtype : str
+    :type name: str
+    """
+    import os.path as ospath
+    filename = ospath.expanduser("~/.ssh/%s" % name)
+    LOG("Loading SSH private key data from %s" % filename)
+    with open(filename, 'r') as f:
+        return f.read()
+
+
 def loadPubRsaKeyData(name="id_rsa.pub"):
     """
     :type name: str
     """
     import os.path as ospath
     filename = ospath.expanduser("~/.ssh/%s" % name)
-    LOG("Loading SSH public key from %s" % filename)
+    LOG("Loading SSH public key data from %s" % filename)
     with open(filename, 'r') as f:
         return f.read()
 
@@ -89,6 +103,23 @@ def newSshClient(hostname, username="root", localPrivKey=None, timeout=None):
     ssh.connect(hostname, username=username, pkey=localPrivKey, timeout=timeout)
 
     return ssh
+
+
+def newSftpClient(hostname, username="root", localPrivKey=None, timeout=None, ssh=None):
+    """
+    :rtype : paramiko.sftp_client.SFTPClient
+    """
+    if ssh is None:
+        ssh = newSshClient(hostname, username=username, localPrivKey=localPrivKey, timeout=timeout)
+    return ssh.open_sftp()
+
+
+def newTmpFileWithScriptData(scriptData):
+    fd, scriptFile = tempfile.mkstemp()
+    os.write(fd, scriptData)
+    os.close(fd)
+    os.chmod(scriptFile, 0755)
+    return scriptFile
 
 
 class NodeStatus(object):
@@ -210,7 +241,8 @@ def runCommandOnHost(hostname, command,
                      username='root',
                      localPrivKey=None,
                      timeout=None,
-                     runSynchronously=True):
+                     runSynchronously=True,
+                     ssh=None):
     """
     :type timeout: int
     :type localPrivKey: str
@@ -223,7 +255,11 @@ def runCommandOnHost(hostname, command,
         LOG("For %s@%s will run init script asynchronously. Assuming 'at' exists on the target VM" % (username, hostname))
 
     LOG("For %s@%s EXEC %s" % (username, hostname, command if len(command) <= 80 else command[0:77] + "..."))
-    ssh = newSshClient(hostname, username=username, localPrivKey=localPrivKey)
+
+    if ssh is None:
+        ssh = newSshClient(hostname, username=username, localPrivKey=localPrivKey)
+    else:
+        LOG("Reusing ssh client")
 
     chan = ssh.get_transport().open_session()
     chan.settimeout(timeout)
@@ -248,6 +284,40 @@ def runCommandOnHost(hostname, command,
         LOG(">> [%s] STDERR: %s" % (hostname, line))
 
     return exitCode, stdoutLines, stderrLines
+
+
+def runScriptDataOnHost(hostname, scriptData, remoteScriptFile,
+                        username='root',
+                        localPrivKey=None,
+                        timeout=None,
+                        runSynchronously=True,
+                        ssh=None):
+    """
+    :type remoteScriptFile: str
+    :type timeout: int
+    :type localPrivKey: str
+    :type hostname: strs
+    :type command: str
+    """
+    localScriptFile = newTmpFileWithScriptData(scriptData)
+    sftp = newSftpClient(hostname, username=username, ssh=ssh)
+    LOG("Copying %s to %s@%s:%s" % (localScriptFile, username, hostname, remoteScriptFile))
+    result = sftp.put(localScriptFile, remoteScriptFile)
+    LOG("result = %s" % result)
+    sftp.close()
+    os.unlink(localScriptFile)
+
+    if remoteScriptFile.startswith("/"):
+        remoteCommand = remoteScriptFile
+    else:
+        remoteCommand = "~/%s" % remoteScriptFile
+
+    return runCommandOnHost(hostname, remoteCommand,
+                            username=username,
+                            localPrivKey=localPrivKey,
+                            timeout=timeout,
+                            ssh=ssh,
+                            runSynchronously=runSynchronously)
 
 
 def checkSshOnHost(hostname, username="root", localPrivKey=None, timeout=None):
