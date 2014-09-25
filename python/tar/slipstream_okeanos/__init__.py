@@ -413,9 +413,11 @@ class OkeanosNativeClient(object):
             LOG(">>>> %s" % _p)
 
         # enable kamaki logging to investigate some error
+        # /tmp/slipstream/reports/orchestrator.slipstream.log
         from kamaki.cli import logger
-        logger.add_stream_logger('kamaki.send')
-        logger.add_stream_logger('kamaki.recv')
+        LOG_FILE_PATH="/tmp/slipstream/reports/orchestrator.slipstream.log"
+        logger.add_file_logger('kamaki.send', filename=LOG_FILE_PATH)
+        logger.add_file_logger('kamaki.recv', filename=LOG_FILE_PATH)
         resultDict = self.cycladesClient.create_server(nodeName, flavorId, imageId, personality=personality)
         # No IP is included in this result
         nodeDetails = NodeDetails(resultDict,
