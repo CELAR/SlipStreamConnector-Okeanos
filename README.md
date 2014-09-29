@@ -8,7 +8,7 @@ Source code for SlipStream ~Okeanos connector.
 |-----------------------| :----: |
 | Run Image             |   ✓   |
 | Run Deployment        |   ✓   |   
-| Build Image           |   ✗   |
+| Build Image           |   [partial](https://github.com/CELAR/SlipStreamConnector-Okeanos/issues/4)   |
 | Extra disk volatile   |   ✗   |
 | Extra disk persistent |   ✗   |
 
@@ -19,4 +19,4 @@ In order for the ~Okeanos connector to be fully functional, you need to install 
 	$ pip install kamaki
 
 ## License
-This software is under (Apache v2)[LICENSE.txt]
+This software is under [Apache v2](LICENSE.txt)
