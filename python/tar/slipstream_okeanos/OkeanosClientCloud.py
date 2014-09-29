@@ -22,8 +22,8 @@ import inspect
 
 from slipstream.cloudconnectors.BaseCloudConnector import BaseCloudConnector
 from slipstream.NodeDecorator import KEY_RUN_CATEGORY
-from . import LOG, OkeanosNativeClient, loadPubRsaKeyData, NodeStatus
-import slipstream.exceptions.Exceptions as Exceptions
+from . import LOG, OkeanosNativeClient, loadPubRsaKeyData, NodeStatus, runScriptDataOnHost
+from slipstream.exceptions import Exceptions
 
 
 def getConnector(configHolder):
@@ -55,8 +55,8 @@ class OkeanosClientCloud(BaseCloudConnector):
     def _initialization(self, user_info):
         # userInfo =
         # {
-        #   'okeanos.endpoint': 'https://accounts.okeanos.grnet.gr/identity/v2.0',
-        #   'okeanos.username': '==UUID==',
+        # 'okeanos.endpoint': 'https://accounts.okeanos.grnet.gr/identity/v2.0',
+        # 'okeanos.username': '==UUID==',
         #   'okeanos.password': '==TOKEN=='
         #   'okeanos.service.type': 'compute',
         #   'okeanos.service.name': 'cyclades_compute',
@@ -88,62 +88,230 @@ class OkeanosClientCloud(BaseCloudConnector):
     def _finalization(self, user_info):
         self.log("NOOP")
 
-    def _build_image(self, user_info, node_instance):
-        msg = "Build image not supported for %s" % self.get_cloud_service_name()
-        self.log("Will raise '%s'" % msg)
-        raise NotImplementedError(msg)
+    def __get_ssh_private_key_file(self, user_info):
+        import os.path as ospath
 
-    def _start_image(self, user_info, node_instance, vm_name):
-        # imageInfo =
-        # {
-        #   'attributes': {
-        #       'category': 'Image',
-        #       'resourceUri': 'module/P5/I5/14',
-        #       'name': 'P5/I5',
-        #       'parentUri': 'module/P5',
-        #       'deleted': 'false',
-        #       'lastModified': '2014-05-30 16:03:15.741 EEST',
-        #       'creation': '2014-05-30 16:03:15.717 EEST',
-        #       'isLatestVersion': 'true',
-        #       'imageId': '6b1c431a-d18c-4609-b4d9-3f29acce2c1f',
-        #       'platform': 'ubuntu',
-        #       'version': '14',
-        #       'loginUser': '',
-        #       'isBase': 'true',
-        #       'shortName': 'I5'
-        #   },
-        #   'extra_disks': {},
-        #   'targets': {},
-        #   'cloud_parameters': {
-        #       'openstack': {
-        #           'openstack.security.groups': 'default',
-        #           'openstack.instance.type': None
-        #       },
-        #       'Cloud': {
-        #           'network': 'Public'
-        #       },
-        #       'okeanos': {
-        #           'okeanos.security.groups': 'default',
-        #           'okeanos.instance.type': 'C2R2048D10ext_vlmc'
-        #       }
-        #   }
-        # }
+        return ospath.expanduser("~/.ssh/id_rsa")
+
+    def __get_vm_username_password(self, node_instance):
+        username = node_instance.get_username('root')
+        password = None
+        self.log("username = %s, password = %s" % (username, password))
+        return username, password
+
+    def _get_ssh_credentials(self, node_instance, user_info):
+        username, password = self.__get_vm_username_password(node_instance)
+        if password:
+            ssh_private_key_file = None
+        else:
+            ssh_private_key_file = self.__get_ssh_private_key_file(user_info)
+        self.log("username = %s, password = %s, ssh_private_key_file = %s" % (username, password, ssh_private_key_file))
+        return username, password, ssh_private_key_file
+
+    def _build_image(self, userInfo, nodeInstance):
         """
-        :param user_info:  UserInfo object
-        :param node_instance:  NodeInstance object
+        :rtype : str
+        :type userInfo: slipstream.UserInfo.UserInfo
+        :type nodeInstance: slipstream.NodeInstance.NodeInstance
+        """
+
+        # userInfo = {
+        # "okeanos.username": "UUID",
+        #  "okeanos.max.iaas.workers": "20",
+        #  "okeanos.quota.vm": "",
+        #  "okeanos.service.name": "cyclades_compute",
+        #  "General.On Error Run Forever": "true",
+        #  "General.Timeout": "30",
+        #  "General.On Success Run Forever": "true",
+        #  "General.orchestrator.publicsshkey": "ssh-rsa LOCALKEY root@snf-000000\n",
+        #  "okeanos.orchestrator.instance.type": "C2R2048D10ext_vlmc",
+        #  "okeanos.orchestrator.imageid": "fe31fced-a3cf-49c6-b43b-f58f5235ba45",
+        #  "User.email": "super@sixsq.com",
+        #  "General.default.cloud.service": "okeanos",
+        #  "okeanos.endpoint": "https://accounts.okeanos.grnet.gr/identity/v2.0",
+        #  "User.lastName": "User",
+        #  "okeanos.update.clienturl": "https://IP/downloads/okeanoslibs.tar.gz",
+        #  "User.firstName": "Super",
+        #  "okeanos.service.region": "default",
+        #  "General.ssh.public.key": "ssh-rsa  TESTSSHKEY\n",
+        #  "okeanos.service.type": "compute",
+        #  "General.Verbosity Level": "3",
+        #  "okeanos.password": "TOKEN",
+        #  "okeanos.private.key": None
+        #}
+
+        # nodeInstance = NodeInstance({
+        #  "image.parentUri": "module/P5",
+        #  "image.shortName": "B2",
+        #  "image.logoLink": "",
+        #  "abort": null,
+        #  "image.deleted": "false",
+        #  "image.category": "Image",
+        #  "image.class": "com.sixsq.slipstream.persistence.ImageModule",
+        #  "image.version": "7",
+        #  "okeanos.security.groups": "default",
+        #  "okeanos.instance.type": "C2R2048D10ext_vlmc",
+        #  "extra.disk.volatile": None,
+        #  "image.platform": "ubuntu",
+        #  "network": "Public",
+        #  "image.moduleReferenceUri": "module/P5/B1",
+        #  "hostname": None,
+        #  "image.lastModified": "2014-09-18 17:06:18.915 EEST",
+        #  "is.orchestrator": "false",
+        #  "url.service": None,
+        #  "statecustom": None,
+        #  "image.isBase": "false",
+        #  "complete": "false",
+        #  "image.resourceUri": "module/P5/B2/7",
+        #  "image.id": "fe31fced-a3cf-49c6-b43b-f58f5235ba45",
+        #  "image.loginUser": "root",
+        #  "image.isLatestVersion": "true",
+        #  "scale.state": "creating",
+        #  "image.packages": [],
+        #  "image.name": "P5/B2",
+        #  "name": "machine",
+        #  "instanceid": None,
+        #  "cloudservice": "okeanos",
+        #  "image.recipe": "#!/bin/sh\n\necho BuildImage > /root/BuildImage.txt\n",
+        #  "url.ssh": None,
+        #  "image.creation": "2014-09-18 17:05:27.995 EEST",
+        #  "image.prerecipe": "",
+        #  "vmstate": "Unknown",
+        #  "image.description": ""
+        #})
+
+        self.log()
+        self.log("userInfo = %s" % userInfo)
+        self.log("nodeInstance = %s" % nodeInstance)
+
+        machine_name = nodeInstance.get_name()
+        vm = self._get_vm(machine_name)
+        ip = self._vm_get_ip(vm)
+        # nodeDetails = vm['instance']
+
+        remoteUsername = nodeInstance.get_image_attribute("loginUser", default_value="root")
+        self.log("ip = %s, remoteUsername = %s" % (ip, remoteUsername))
+        self.okeanosClient.waitSshOnHost(ip, username=remoteUsername)
+
+        self.log("Running _build_image_increment(), that is: prerecipe, packages, recipe")
+        prerecipe = nodeInstance.get_prerecipe()
+        runScriptDataOnHost(ip, prerecipe, "prerecipe", username=remoteUsername)
+        recipe = nodeInstance.get_recipe()
+        runScriptDataOnHost(ip, recipe, "recipe", username=remoteUsername)
+
+        self._build_image_increment(userInfo, nodeInstance, ip)
+
+        self.log("FINALLY creating the new image")
+
+        imageCategory = nodeInstance.get_image_attribute("category")  # Image
+        imageResourceUri = nodeInstance.get_image_attribute("resourceUri")  # P5/B2/7
+        newImageName = "%s.%s" % (imageCategory, imageResourceUri.replace("/", "."))  # Image.P5.B2.7
+
+        snfMkImageScriptData = "#!/bin/sh"
+        snfMkImageScriptData += "\n\n"
+        snfMkImageScriptData += "snf-mkimage -a %s -t %s -u %s -r %s / | tee -a ~/snfmkimage.log" % (self.okeanosAuthURL,
+                                                                                                     self.okeanosToken,
+                                                                                                     newImageName,
+                                                                                                     newImageName)
+        snfMkImageScriptData += "\n"
+
+        self.log("About to run %s" % snfMkImageScriptData)
+        self.log("For %s@%s in order to create image %s" % (remoteUsername, ip, newImageName))
+        exitCode, stdoutLines, stderrLines = runScriptDataOnHost(ip, snfMkImageScriptData, "slipstream-okeanos-build-image", username=remoteUsername)
+
+        # localScriptFile = newTmpFileWithScriptData(snfMkImageScriptData)
+        # remoteScriptFile = "slipstream-okeanos-build-image"
+        # remoteCommand = "~/%s" % remoteScriptFile
+        #
+        # sftp = newSftpClient(ip, username=remoteUsername)
+        # sftp.put(localScriptFile, remoteScriptFile)
+        # sftp.close()
+        # exitCode, stdoutLines, stderrLines = runCommandOnHost(ip, remoteCommand)
+
+        return "YAHOO"  # FAKE
+
+    def _start_image(self, userInfo, nodeInstance, vm_name):
+        """
+        :type userInfo: slipstream.UserInfo.UserInfo
+        :type nodeInstance: slipstream.NodeInstance.NodeInstance
         :param vm_name: string
         :return: :raise Exception:
         """
+
+        # userInfo = {
+        # "okeanos.username": "UUID",
+        #  "okeanos.max.iaas.workers": "20",
+        #  "okeanos.quota.vm": "",
+        #  "okeanos.service.name": "cyclades_compute",
+        #  "General.On Error Run Forever": "true",
+        #  "General.Timeout": "30",
+        #  "General.On Success Run Forever": "true",
+        #  "General.orchestrator.publicsshkey": "ssh-rsa LOCALKEY root@snf-000000\n",
+        #  "okeanos.orchestrator.instance.type": "C2R2048D10ext_vlmc",
+        #  "okeanos.orchestrator.imageid": "fe31fced-a3cf-49c6-b43b-f58f5235ba45",
+        #  "User.email": "super@sixsq.com",
+        #  "General.default.cloud.service": "okeanos",
+        #  "okeanos.endpoint": "https://accounts.okeanos.grnet.gr/identity/v2.0",
+        #  "User.lastName": "User",
+        #  "okeanos.update.clienturl": "https://SlipStreamServer/downloads/okeanoslibs.tar.gz",
+        #  "User.firstName": "Super",
+        #  "okeanos.service.region": "default",
+        #  "General.ssh.public.key": "ssh-rsa SlipStreamServerUIUserSSHKey\n",
+        #  "okeanos.service.type": "compute",
+        #  "General.Verbosity Level": "3",
+        #  "okeanos.password": "TOKEN"
+        #}
+
+        # nodeInstance = NodeInstance({
+        #  "image.parentUri": "module/P5",
+        #  "image.shortName": "B3",
+        #  "image.logoLink": "",
+        #  "abort": None,
+        #  "image.deleted": "false",
+        #  "image.category": "Image",
+        #  "image.class": "com.sixsq.slipstream.persistence.ImageModule",
+        #  "image.version": "8",
+        #  "okeanos.security.groups": "default",
+        #  "okeanos.instance.type": "C2R2048D10ext_vlmc",
+        #  "extra.disk.volatile": None,
+        #  "image.platform": "ubuntu",
+        #  "network": "Public",
+        #  "image.moduleReferenceUri": "module/P5/I5",
+        #  "hostname": None,
+        #  "image.lastModified": "2014-09-20 17:56:10.860 EEST",
+        #  "is.orchestrator": "false",
+        #  "url.service": None,
+        #  "statecustom": None,
+        #  "image.isBase": "false",
+        #  "complete": "false",
+        #  "image.resourceUri": "module/P5/B3/8",
+        #  "image.id": "fe31fced-a3cf-49c6-b43b-f58f5235ba45",
+        #  "image.loginUser": "root",
+        #  "image.isLatestVersion": "true",
+        #  "scale.state": "creating",
+        #  "image.packages": [],
+        #  "image.name": "P5/B3",
+        #  "name": "machine",
+        #  "instanceid": None,
+        #  "cloudservice": "okeanos",
+        #  "image.recipe": "#!/bin/sh\n\necho BuildImage > /root/BuildImage.txt\n\n",
+        #  "url.ssh": None,
+        #  "image.creation": "2014-09-20 17:56:10.822 EEST",
+        #  "image.prerecipe": "",
+        #  "vmstate": "Unknown",
+        #  "image.description": ""
+        #})
+
         self.log()
-        self.log("user_info = %s" % user_info)
-        self.log("node_instance = %s" % node_instance)
+        self.log("userInfo = %s" % userInfo)
+        self.log("nodeInstance = %s" % nodeInstance)
         self.log("vm_name = %s" % vm_name)
-        initScriptData = self._get_init_script(node_instance)
+        initScriptData = self._get_init_script(nodeInstance)
         self.log("initScriptData = %s" % initScriptData)
 
-        imageId = node_instance.get_image_id()
-        flavorIdOrName = node_instance.get_instance_type()
-        sshPubKey = user_info.get_public_keys()
+        imageId = nodeInstance.get_image_id()
+        flavorIdOrName = nodeInstance.get_instance_type()
+        sshPubKey = userInfo.get_public_keys()
         initScriptPath = "/root/okeanosNodeInitScript"
         if initScriptData is None:
             initScriptPathAndData = None
@@ -188,8 +356,8 @@ class OkeanosClientCloud(BaseCloudConnector):
     def _get_init_script(self, node_instance):
         # nodeInfo =
         # {
-        #   'multiplicity': 1,
-        #   'image': {
+        # 'multiplicity': 1,
+        # 'image': {
         #       'attributes': {
         #           'category': 'Image',
         #           'resourceUri': 'module/P5/I5/14',
@@ -256,8 +424,8 @@ class OkeanosClientCloud(BaseCloudConnector):
     def _wait_and_get_instance_ip_address(self, vm):
         # vm =
         # {
-        #   'ip': '',
-        #   'instance': <slipstream.cloudconnectors.okeanos.NodeDetails object at 0x0000000>,
+        # 'ip': '',
+        # 'instance': <slipstream.cloudconnectors.okeanos.NodeDetails object at 0x0000000>,
         #   'id': '549929',
         #   'networkType': 'Public'
         # }
