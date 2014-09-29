@@ -412,10 +412,6 @@ class OkeanosNativeClient(object):
         for _p in personality:
             LOG(">>>> %s" % _p)
 
-        # enable kamaki logging to investigate some error
-        from kamaki.cli import logger
-        logger.add_stream_logger('kamaki.send')
-        logger.add_stream_logger('kamaki.recv')
         resultDict = self.cycladesClient.create_server(nodeName, flavorId, imageId, personality=personality)
         # No IP is included in this result
         nodeDetails = NodeDetails(resultDict,
