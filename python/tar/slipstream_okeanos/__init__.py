@@ -1,7 +1,23 @@
+"""
+ Copyright (c) 2014 GRNET SA (grnet.gr)
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
 import os
 import tempfile
 from kamaki.clients.astakos import AstakosClient
-from kamaki.clients.cyclades import CycladesClient
+from kamaki.clients.cyclades import CycladesClient, CycladesBlockStorageClient
 import time
 import socket
 
@@ -339,19 +355,23 @@ def checkSshOnHost(hostname, username="root", localPrivKey=None, timeout=None):
 
 
 class OkeanosNativeClient(object):
-    def __init__(self, token, authURL='https://accounts.okeanos.grnet.gr/identity/v2.0', typeOfCompute='compute'):
+    def __init__(self, token, authURL='https://accounts.okeanos.grnet.gr/identity/v2.0'):
         """
-        :type typeOfCompute: str
+        :type cycladesServiceType: str
         :type authURL: str
         :type token: str
         """
         self.authURL = authURL
         self.token = token
-        self.typeOfCompute = typeOfCompute
+        self.cycladesServiceType = CycladesClient.service_type
+        self.blockStorageServiceType = CycladesBlockStorageClient.service_type
         self.astakosClient = AstakosClient(self.authURL, self.token)
-        self.computeEndpoint = self.astakosClient.get_service_endpoints(self.typeOfCompute)
-        self.computeURL = self.computeEndpoint[u'publicURL']
-        self.cycladesClient = CycladesClient(self.computeURL, self.token)
+        endpointF = self.astakosClient.get_service_endpoints
+        self.cycladesEndpoint = endpointF(self.cycladesServiceType)
+        self.cycladesClient = CycladesClient(self.cycladesEndpoint, self.token)
+        self.blockStorageEndpoint = endpointF(self.blockStorageServiceType)
+        self.blockStorageClient = CycladesBlockStorageClient(self.blockStorageEndpoint, token)
+
         flavorsById = {}
         flavorsByName = {}
         for flavor in self.cycladesClient.list_flavors():
@@ -390,6 +410,17 @@ class OkeanosNativeClient(object):
             instanceInfo = ListNodeResult(serverId, serverStatus, serverDetails)
             instanceInfoList.append(instanceInfo)
         return instanceInfoList
+
+    def createVolume(self, serverId, sizeGB):
+        # There is a nested dictionary here with only one field 'volume',
+        # so we must extract it first.
+        volumeContainer = self.blockStorageClient.create_volume(sizeGB, serverId)
+        volume = volumeContainer[u'volume']
+        volumeId = volume[u'id']
+        return volumeId
+
+    def deleteVolume(self, volumeId):
+        response = self.blockStorageClient.delete_volume(volumeId)
 
     def createNode(self, nodeName, flavorIdOrName, imageId,
                    sshPubKey=None,
@@ -552,8 +583,11 @@ class OkeanosNativeClient(object):
 
     def createNodeAndWait(self, nodeName, flavorIdOrName, imageId, sshPubKey, initScriptPathAndData=None,
                           remoteUsername="root", remoteUsergroup=None, localPubKeyData=None, localPrivKey=None,
-                          sshTimeout=None, runInitScriptSynchronously=False):
+                          sshTimeout=None, runInitScriptSynchronously=False,
+                          extraVolatileDiskGB=0):
         """
+
+        :type extraVolatileDiskGB: int
         :type runInitScriptSynchronously: bool
         :type sshPubKey: str
         :type imageId: str
@@ -573,6 +607,17 @@ class OkeanosNativeClient(object):
         nodeId = nodeDetails.id
         nodeDetailsActive = self.waitNodeStatus(nodeId, NodeStatus.ACTIVE)
         nodeDetails.updateIPsAndStatusFrom(nodeDetailsActive)
+
+        # attach any additional disk
+        hostIP = nodeDetails.ipv4s[0]
+        if extraVolatileDiskGB:
+            LOG("Creating volatile disk of size %s GB for machine IP=%s, id=%s" % (extraVolatileDiskGB, hostIP, nodeId))
+            volumeId = self.createVolume(nodeId, extraVolatileDiskGB)
+            LOG("Created volumeId=%s of size %s GB for machine IP=%s, id=%s" % (volumeId, extraVolatileDiskGB, hostIP, nodeId))
+            # We do nothing more with the volumeId.
+            # When the VM is destroyed by the IaaS, the extra disk is automatically destroyed as well.
+        else:
+            LOG("No need for extra volatile disk for machine IP=%s, id=%s" % (hostIP, nodeId))
 
         # Some times, right after node is reported ACTIVE, network is unreachable or SSH is not immediately ready.
         # We have to cope with that by waiting.

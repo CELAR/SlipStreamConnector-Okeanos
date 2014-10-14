@@ -1,11 +1,6 @@
-package com.sixsq.slipstream.connector.okeanos;
-
 /*
- * +=================================================================+
- * SlipStream Server (WAR)
- * =====
- * Copyright (C) 2013 SixSq Sarl (sixsq.com)
- * =====
+ * Copyright (c) 2014 GRNET SA (grnet.gr)
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.sixsq.slipstream.connector.okeanos;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * -=================================================================-
  */
+
+package com.sixsq.slipstream.connector.okeanos;
 
 import com.sixsq.slipstream.exceptions.ValidationException;
 import com.sixsq.slipstream.factory.ModuleParametersFactoryBase;
