@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.sixsq.slipstream.connector.okeanos;
+package gr.grnet.celar.connector;
 
 import com.sixsq.slipstream.configuration.Configuration;
 import com.sixsq.slipstream.connector.CliConnectorBase;

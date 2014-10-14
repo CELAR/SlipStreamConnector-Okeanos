@@ -14,24 +14,23 @@
  * limitations under the License.
  */
 
-package com.sixsq.slipstream.connector.okeanos;
+package gr.grnet.celar.connector;
 
-import com.sixsq.slipstream.connector.UserParametersFactoryBase;
 import com.sixsq.slipstream.exceptions.ValidationException;
+import com.sixsq.slipstream.factory.ModuleParametersFactoryBase;
+import com.sixsq.slipstream.persistence.ImageModule;
 
-public class OkeanosUserParametersFactory extends UserParametersFactoryBase {
-    public static final String SERVICE_TYPE_PARAMETER_NAME = "service.type";
-    public static final String SERVICE_NAME_PARAMETER_NAME = "service.name";
-    public static final String SERVICE_REGION_PARAMETER_NAME = "service.region";
+public class OkeanosImageParametersFactory extends ModuleParametersFactoryBase {
 
-	public OkeanosUserParametersFactory(String connectorInstanceName) throws ValidationException {
+    public static final String SECURITY_GROUPS = "security.groups";
+
+	public OkeanosImageParametersFactory(String connectorInstanceName) throws ValidationException {
 		super(connectorInstanceName);
 	}
 
 	@Override
 	protected void initReferenceParameters() throws ValidationException {
-		putMandatoryParameter(KEY_PARAMETER_NAME, "Okeanos UUID");
-		putMandatoryPasswordParameter(SECRET_PARAMETER_NAME, "Okeanos Token");
+		putParameter(ImageModule.INSTANCE_TYPE_KEY, "C2R2048D10ext_vlmc", "Flavor", true);
+        putMandatoryParameter(SECURITY_GROUPS, "Security Groups (comma separated list)", "default");
 	}
-
 }

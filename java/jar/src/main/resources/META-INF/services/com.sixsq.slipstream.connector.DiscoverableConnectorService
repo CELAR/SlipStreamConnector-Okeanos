@@ -1,1 +1,1 @@
-com.sixsq.slipstream.connector.okeanos.OkeanosDiscoverableConnectorService
+gr.grnet.celar.connector.OkeanosDiscoverableConnectorService
