@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# Helper script during development to restart the SlipStream server
+# and tail its log. It assumes you have a machine named slipstream5
+# defined in your SSH config file.
+
+ssh slipstream5 'service slipstream restart && sleep 3 && tail -f /opt/slipstream/server/logs/slipstream.log.0'
+
