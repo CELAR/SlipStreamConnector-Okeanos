@@ -199,12 +199,15 @@ public class OkeanosConnector extends CliConnectorBase {
     private String getVolatileDiskSize(Run run) throws NotFoundException, AbortException {
         switch(run.getType()) {
             case Machine:
+            case Run:
                 final String extraDiskName = Run.MACHINE_NAME_PREFIX + ImageModule.EXTRADISK_PARAM_PREFIX + ".volatile";
                 final String extraDiskValue = run.getRuntimeParameterValue(extraDiskName);
+
+                log.info(format("Volatile disk size (%s) = %s", extraDiskName, extraDiskValue));
                 
                 return extraDiskValue;
             default:
-                return null; // WAT ???
+                return "0";
         }
     }
 
