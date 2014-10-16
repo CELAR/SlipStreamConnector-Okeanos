@@ -413,7 +413,7 @@ class OkeanosNativeClient(object):
     def createVolume(self, serverId, sizeGB):
         # There is a nested dictionary here with only one field 'volume',
         # so we must extract it first.
-        volumeContainer = self.blockStorageClient.create_volume(sizeGB, serverId)
+        volumeContainer = self.blockStorageClient.create_volume(sizeGB, serverId, '%s-volatile-%s' % (serverId, sizeGB))
         volume = volumeContainer[u'volume']
         volumeId = volume[u'id']
         return volumeId
