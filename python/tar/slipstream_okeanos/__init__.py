@@ -357,7 +357,6 @@ def checkSshOnHost(hostname, username="root", localPrivKey=None, timeout=None):
 class OkeanosNativeClient(object):
     def __init__(self, token, authURL='https://accounts.okeanos.grnet.gr/identity/v2.0'):
         """
-        :type cycladesServiceType: str
         :type authURL: str
         :type token: str
         """
@@ -367,9 +366,9 @@ class OkeanosNativeClient(object):
         self.blockStorageServiceType = CycladesBlockStorageClient.service_type
         self.astakosClient = AstakosClient(self.authURL, self.token)
         endpointF = self.astakosClient.get_service_endpoints
-        self.cycladesEndpoint = endpointF(self.cycladesServiceType)
+        self.cycladesEndpoint = endpointF(self.cycladesServiceType)[u'publicURL']
         self.cycladesClient = CycladesClient(self.cycladesEndpoint, self.token)
-        self.blockStorageEndpoint = endpointF(self.blockStorageServiceType)
+        self.blockStorageEndpoint = endpointF(self.blockStorageServiceType)[u'publicURL']
         self.blockStorageClient = CycladesBlockStorageClient(self.blockStorageEndpoint, token)
 
         flavorsById = {}
