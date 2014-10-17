@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# Helper script during development to build and deploy the java part
+# of the connector. It assumes you have a machine named slipstream5
+# defined in your SSH config file.
+
+# Do not forget to restart the SlipStream server
+
+mvn package && \
+scp target/SlipStreamConnector-Okeanos-java-jar-0.0.1-SNAPSHOT.jar slipstream5:/opt/slipstream/server/lib/connectors/slipstream-connector-okeanos.jar

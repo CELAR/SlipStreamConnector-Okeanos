@@ -8,9 +8,9 @@ Source code for SlipStream ~Okeanos connector.
 |-----------------------| :----: |
 | Run Image             |   ✓   |
 | Run Deployment        |   ✓   |   
-| Build Image           |   [partial](https://github.com/CELAR/SlipStreamConnector-Okeanos/issues/4)   |
-| Extra disk volatile   |   ✗   |
-| Extra disk persistent |   ✗   |
+| Build Image           |   [#4](https://github.com/CELAR/SlipStreamConnector-Okeanos/issues/4)   |
+| Volatile disk         |   ✓   |
+
 
 ## Installation
 ### Slipstream Server

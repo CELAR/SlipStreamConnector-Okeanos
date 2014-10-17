@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# Helper script during development to build and deploy the python part
+# of the connector. It assumes you have a machine named slipstream5
+# defined in your SSH config file.
+# 
+
+rm -f okeanoslibs.tar.gz && \
+apack okeanoslibs.tar.gz slipstream_okeanos && \
+scp okeanoslibs.tar.gz slipstream5:/opt/slipstream/downloads && \
+scp bin/okeanos-* slipstream5:/opt/slipstream/connectors/bin/ && \
+scp -r slipstream_okeanos slipstream5:/usr/lib/python2.6/site-packages/ && \
+ssh slipstream5 'rm -f /usr/lib/python2.6/site-packages/slipstream_okeanos/*.pyc' && \
+ssh slipstream5 'ls -al /opt/slipstream/connectors/bin/; ls -al /usr/lib/python2.6/site-packages/slipstream_okeanos/'
