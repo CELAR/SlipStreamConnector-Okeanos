@@ -360,6 +360,9 @@ class OkeanosNativeClient(object):
         :type authURL: str
         :type token: str
         """
+        from kamaki.clients.utils import https
+        https.patch_ignore_ssl()
+
         self.authURL = authURL
         self.token = token
         self.cycladesServiceType = CycladesClient.service_type

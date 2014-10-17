@@ -73,8 +73,8 @@ class OkeanosClientCloud(BaseCloudConnector):
         #   'General.Verbosity Level': '3',
         # }
 
-        # from kamaki.clients.utils import https
-        # https.patch_to_raise_ssl_errors(False)
+        from kamaki.clients.utils import https
+        https.patch_ignore_ssl()
 
         self.log("user_info = %s" % user_info)
         self.okeanosAuthURL = user_info.get_cloud_endpoint()
