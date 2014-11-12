@@ -46,6 +46,31 @@ In order for the ~Okeanos connector to be fully functional, you need to install 
 ## Certified images [2014-09-18]
 As of 2014-09-18, a VM image that is to be used as an Orchestrator must have preinstalled software in it. We call these images *CELAR-certified*. The rationale is to move ad-hoc and distribution-sensitive code out of the connector, in order to minimize complexity. For the time being, we provide a recipe for an Ubuntu-based such image [here](vmrecipes/celar-ubuntu-14.04-LTS.md).
 
+An Ubuntu public image with the above characteristics is already publish in ~Okeanos production:
+
+```
+$ kamaki image info fe31fced-a3cf-49c6-b43b-f58f5235ba45
+name: CELAR-Ubuntu-14.04-LTS
+checksum: e3069718eaf4990fbc2805ce3d42dffa4bee5aed7f5ee664486a7f1dc455e217
+updated-at: 2014-09-18 12:10:58
+created-at: 2014-09-18 12:10:58
+id: fe31fced-a3cf-49c6-b43b-f58f5235ba45
+deleted-at: 
+location: pithos://fc95f201-d5a9-46fa-8ede-b8983b420a40/images/CELAR-Ubuntu-14.04-LTS
+is-public: True
+owner: fc95f201-d5a9-46fa-8ede-b8983b420a40 (loverdos@gmail.com)
+disk-format: diskdump
+size: 2.15GiB
+properties:
+    PARTITION_TABLE: msdos
+    OSFAMILY: linux
+    DESCRIPTION: Ubuntu 14.04.1 LTS
+    OS: ubuntu
+    ROOT_PARTITION: 1
+    USERS: user
+container-format: bare
+```
+
 
 ## Breaking change [2014-10-15]
 The upcoming version `0.16` of [Synnefo](https://www.synnefo.org), the IaaS software that ~Okeanos is based on and which is needed to support the Add Extra Volatile Disk feature, introduces a breaking change in the `kamaki` software. This is reported and explained in the respective ticket [The new SSL authentication handling breaks software using kamaki](https://github.com/grnet/kamaki/issues/72), opened 2014-10-15. 
