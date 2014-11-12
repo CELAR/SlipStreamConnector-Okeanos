@@ -46,7 +46,7 @@ In order for the ~Okeanos connector to be fully functional, you need to install 
 ## Certified images [2014-09-18]
 As of 2014-09-18, a VM image that is to be used as an Orchestrator must have preinstalled software in it. We call these images *CELAR-certified*. The rationale is to move ad-hoc and distribution-sensitive code out of the connector, in order to minimize complexity. For the time being, we provide a recipe for an Ubuntu-based such image [here](vmrecipes/celar-ubuntu-14.04-LTS.md).
 
-An Ubuntu public image with the above characteristics is already publish in ~Okeanos production:
+An Ubuntu public image with the above characteristics is already published in ~Okeanos production:
 
 ```
 $ kamaki image info fe31fced-a3cf-49c6-b43b-f58f5235ba45
