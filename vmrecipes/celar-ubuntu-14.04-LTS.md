@@ -57,7 +57,7 @@ $ echo "alias psg='ps -ef | grep -i'" >> ~/.zshrc
 ```
 
 ## Very important [as of 2014-10-15]
-[README](../README.md) already contains the details for the breaking change about `kamaki`. Since no verion of `kamaki` installed via `pip` is going to work out of the box, we have to configure it manually. Our Ubuntu box already has certificates installed and we can directly feed them to `kamaki`. So consider the following as the last step in the above procedure:
+[README](../README.md) already contains the details for the breaking change about `kamaki`. Since no version of `kamaki` installed via `pip` is going to work out of the box, we have to configure it manually. Our Ubuntu box already has certificates installed and we can directly feed them to `kamaki`. So consider the following as the last step in the above procedure:
 
 ```
 $ kamaki config set ca_certs /etc/ssl/certs/ca-certificates.crt
