@@ -130,6 +130,7 @@ fe31fced-a3cf-49c6-b43b-f58f5235ba45 CELAR-Ubuntu-14.04-LTS
 ...
 ```
 
+Please see [celar-ubuntu-14.04-LTS](vmrecipes/celar-ubuntu-14.04-LTS.md) for the correct procedure regarding our CELAR-certified Ubuntu VM image.
 
 ## License
 This software is under [Apache v2](LICENSE.txt)
