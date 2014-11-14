@@ -1,7 +1,7 @@
 These steps are needed in order to upgrade "Ubuntu 14.04 Server LTS" to an image suitable for SlipStream, with the following capabilities:
 
 1. Orchestrator VM
-2. VM for which "Build Image" is supported.
+2. VM for which "Add (extra) Volatile Disk" is supported.
 
 ```
 # convenience, skip if want to user-interaction
@@ -62,3 +62,6 @@ $ echo "alias psg='ps -ef | grep -i'" >> ~/.zshrc
 ```
 $ kamaki config set ca_certs /etc/ssl/certs/ca-certificates.crt
 ```
+
+### Note
+The above command changes `~/.kamakirc`. Make sure, when creating the image, that this particular file is preserved inside the image.
