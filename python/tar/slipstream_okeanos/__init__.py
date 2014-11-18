@@ -366,7 +366,7 @@ class OkeanosNativeClient(object):
         self.authURL = authURL
         self.token = token
         self.cycladesServiceType = CycladesClient.service_type
-        self.blockStorageServiceType = CycladesBlockStorageClient.service_type
+        self.blockStorageServiceType = 'object-store'  #CycladesBlockStorageClient.service_type
         self.astakosClient = AstakosClient(self.authURL, self.token)
         endpointF = self.astakosClient.get_service_endpoints
         self.cycladesEndpoint = endpointF(self.cycladesServiceType)[u'publicURL']
