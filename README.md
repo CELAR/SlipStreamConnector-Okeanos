@@ -4,7 +4,7 @@ Source code for SlipStream ~Okeanos connector.
 
 ## Status
 
-The connector is in version `0.5.0-SNAPSHOT`, based on SlipStrtream version `2.3.4-SNAPSHOT`.
+The connector is in version `0.5.0-SNAPSHOT`, based on SlipStrtream version `2.3.4-SNAPSHOT`. We use Java 1.7.
 
 | Capability            | Status |
 |-----------------------| :----: |
