@@ -430,7 +430,8 @@ class OkeanosNativeClient(object):
                    remoteUsername="root",
                    remoteUsergroup=None,
                    localPubKeyData=None,
-                   createAsyncInitScript=True):
+                   createAsyncInitScript=True,
+                   projectId=None):
         """
 
         :rtype : NodeDetails
@@ -515,7 +516,11 @@ class OkeanosNativeClient(object):
         for _p in personality:
             LOG(">>>> %s" % _p)
 
-        resultDict = self.cycladesClient.create_server(nodeName, flavorId, imageId, personality=personality)
+        resultDict = self.cycladesClient.create_server(nodeName,
+                                                       flavorId,
+                                                       imageId,
+                                                       personality=personality,
+                                                       project_id=projectId)
         # No IP is included in this result
         nodeDetails = NodeDetails(resultDict,
                                   sshPubKey=sshPubKey,
@@ -586,7 +591,7 @@ class OkeanosNativeClient(object):
     def createNodeAndWait(self, nodeName, flavorIdOrName, imageId, sshPubKey, initScriptPathAndData=None,
                           remoteUsername="root", remoteUsergroup=None, localPubKeyData=None, localPrivKey=None,
                           sshTimeout=None, runInitScriptSynchronously=False,
-                          extraVolatileDiskGB=0):
+                          extraVolatileDiskGB=0, projectId=None):
         """
 
         :type extraVolatileDiskGB: int
@@ -605,7 +610,8 @@ class OkeanosNativeClient(object):
                                       initScriptPathAndData=initScriptPathAndData,
                                       remoteUsername=remoteUsername,
                                       remoteUsergroup=remoteUsergroup,
-                                      localPubKeyData=localPubKeyData)
+                                      localPubKeyData=localPubKeyData,
+                                      projectId=projectId)
         nodeId = nodeDetails.id
         nodeDetailsActive = self.waitNodeStatus(nodeId, NodeStatus.ACTIVE)
         nodeDetails.updateIPsAndStatusFrom(nodeDetailsActive)

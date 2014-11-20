@@ -245,6 +245,14 @@ public class OkeanosConnector extends CliConnectorBase {
                 ImageModule.load(run.getModuleResourceUrl()));
     }
 
+    protected String getProjectID(Run run) throws ValidationException {
+        return isInOrchestrationContext(run)
+            ? "\"\""
+            : getParameterValue(
+            OkeanosImageParametersFactory.RESOURCE_PROJECT,
+            ImageModule.load(run.getModuleResourceUrl()));
+    }
+
     class Script {
         final StringBuilder text = new StringBuilder();
         final String logdir;
@@ -489,6 +497,7 @@ public class OkeanosConnector extends CliConnectorBase {
                 "--instance-name", getVmName(run),
                 "--network-type", getNetwork(run),
                 "--security-groups", getSecurityGroups(run),
+                "--project-id", getProjectID(run),
                 "--public-key", publicSshKey,
                 "--context-script", createContextualizationData(run, user)
             );

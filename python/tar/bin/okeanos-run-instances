@@ -17,6 +17,7 @@ limitations under the License.
 """
 
 import warnings
+
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 from slipstream_okeanos.OkeanosCommand import OkeanosCommand
@@ -30,20 +31,31 @@ class MainProgram(OkeanosCommand):
     def setExtraOptions(self, parser):
         parser.add_option('--image-id', dest='imageId', help='Image ID. Mandatory.', default='', metavar='ID')
 
-        parser.add_option('--instance-name', dest='instance_name', help='Name of the instance', default='', metavar='NAME')
+        parser.add_option('--instance-name', dest='instance_name', help='Name of the instance', default='',
+                          metavar='NAME')
 
-        parser.add_option('--instance-type', dest='instance_type', help='Instance Type (Flavor)', default=None, metavar='TYPE')
+        parser.add_option('--instance-type', dest='instance_type', help='Instance Type (Flavor)', default=None,
+                          metavar='TYPE')
 
-        parser.add_option('--network-type', dest='network_type', help='Network type (public or private)', default='public', metavar='NETWORK-TYPE')
+        parser.add_option('--network-type', dest='network_type', help='Network type (public or private)',
+                          default='public', metavar='NETWORK-TYPE')
 
-        parser.add_option('--public-key', dest='public_key', help='Public key in the OpenSSH format', default='', metavar='PUBKEY')
+        parser.add_option('--public-key', dest='public_key', help='Public key in the OpenSSH format', default='',
+                          metavar='PUBKEY')
 
-        parser.add_option('--security-groups', dest='security_groups', help='Comma separated list of security groups', default='', metavar='SECGROUPS')
+        parser.add_option('--security-groups', dest='security_groups', help='Comma separated list of security groups',
+                          default='', metavar='SECGROUPS')
 
-        parser.add_option('--context-script', dest='context_script', help='Context script', default='', metavar='SCRIPT')
+        parser.add_option('--context-script', dest='context_script', help='Context script', default='',
+                          metavar='SCRIPT')
 
         parser.add_option('--volatile-disk-size', dest='vdisksize', help='Volatile disk size (GB)', default='0',
                           metavar='VDISKSIZE')
+
+        # ID of the project that provides the resources
+        parser.add_option('--project-id', dest='project_id', help='ID of the project that provides the resources',
+                          default=None,
+                          metavar='PROJECTID')
 
     def checkExtraOptions(self, options, parser):
         if not all((options.imageId, options.instance_type, options.region, options.instance_name)):
@@ -52,6 +64,7 @@ class MainProgram(OkeanosCommand):
     def setExtraUserInfo(self, userInfo):
         userInfo['General.ssh.public.key'] = self.options.public_key
         userInfo[self.providerName + '.vdisksize'] = self.options.vdisksize
+        userInfo[self.providerName + '.project_id'] = self.options.project_id
 
     def doWork(self):
         nodeName = self.options.instance_name
@@ -61,13 +74,15 @@ class MainProgram(OkeanosCommand):
         contextScriptData = self.options.context_script
         LOG("vdisksize = '%s'" % self.options.vdisksize)
         vdisksizeGB = int(self.options.vdisksize or 0)
+        projectId = self.options.project_id
 
         # Create the server
         contextScriptPath = "/root/okeanos-contextualizer"  # TODO make it configurable in the SlipStreamServer GUI
         contextScriptPathAndData = (contextScriptPath, contextScriptData)
         nodeDetails, scriptResults = self.okeanosClient.createNodeAndWait(nodeName, flavorIdOrName, imageId, sshPubKey,
                                                                           initScriptPathAndData=contextScriptPathAndData,
-                                                                          extraVolatileDiskGB=vdisksizeGB)
+                                                                          extraVolatileDiskGB=vdisksizeGB,
+                                                                          projectId=projectId)
         scriptExitCode, scriptStdoutLines, scriptStderrLines = scriptResults
 
         hostIP = nodeDetails.ipv4s[0]
@@ -79,6 +94,7 @@ class MainProgram(OkeanosCommand):
 
         print nodeDetails.id, hostIP, scriptExitCode, nodeDetails.adminPass
 
+
 if __name__ == "__main__":
     # noinspection PyBroadException
     try:
@@ -88,5 +104,6 @@ if __name__ == "__main__":
         print '\n\nExecution interrupted by the user... goodbye!'
     except:
         import traceback
+
         LOG("#EXCEPTION# %s" % traceback.format_exc())
         exit(1)
