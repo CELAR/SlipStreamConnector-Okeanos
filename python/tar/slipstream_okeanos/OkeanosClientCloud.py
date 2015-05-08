@@ -22,6 +22,7 @@ from slipstream.cloudconnectors.BaseCloudConnector import BaseCloudConnector
 from slipstream.NodeDecorator import KEY_RUN_CATEGORY
 from . import LOG, OkeanosNativeClient, loadPubRsaKeyData, NodeStatus, runScriptDataOnHost
 from slipstream.exceptions import Exceptions
+from slipstream_okeanos import ListNodeResult
 
 
 def getConnector(configHolder):
@@ -56,6 +57,7 @@ class OkeanosClientCloud(BaseCloudConnector):
         # 'okeanos.endpoint': 'https://accounts.okeanos.grnet.gr/identity/v2.0',
         # 'okeanos.username': '==UUID==',
         #   'okeanos.password': '==TOKEN=='
+        #   'okeanos.project.id': '==PROJECT ID=='
         #   'okeanos.service.type': 'compute',
         #   'okeanos.service.name': 'cyclades_compute',
         #   'okeanos.orchestrator.instance.type': 'C2R2048D10ext_vlmc',
@@ -80,6 +82,7 @@ class OkeanosClientCloud(BaseCloudConnector):
         self.okeanosAuthURL = user_info.get_cloud_endpoint()
         self.okeanosUUID = user_info.get_cloud_username()
         self.okeanosToken = user_info.get_cloud_password()
+        self.okeanosProjectId = user_info.get_cloud('project.id')
         self.okeanosClient = OkeanosNativeClient(self.okeanosToken, self.okeanosAuthURL)
 
         self.log("self.okeanosAuthURL = %s" % self.okeanosAuthURL)
@@ -337,7 +340,8 @@ class OkeanosClientCloud(BaseCloudConnector):
             initScriptPathAndData=initScriptPathAndData,
             remoteUsername=remoteUsername,
             localPubKeyData=localPubKeyData,
-            runInitScriptSynchronously=runInitScriptSynchronously)
+            runInitScriptSynchronously=runInitScriptSynchronously,
+            projectId=self.okeanosProjectId)
         scriptExitCode, scriptStdoutLines, scriptStderrLines = scriptResults
         hostname = nodeDetails.ipv4s[0]
         for line in scriptStdoutLines:
@@ -420,7 +424,16 @@ class OkeanosClientCloud(BaseCloudConnector):
         return vm['ip']
 
     def _vm_get_id(self, vm):
-        return vm['id']
+        if isinstance(vm, ListNodeResult):
+            return vm.id
+        else:
+            return vm['id']
+
+    def _vm_get_state(self, vm):
+        if isinstance(vm, ListNodeResult):
+            return vm.status
+        else:
+            return vm['status']
 
     def _wait_and_get_instance_ip_address(self, vm):
         # vm =
@@ -454,3 +467,6 @@ class OkeanosClientCloud(BaseCloudConnector):
     def log(self, msg=''):
         who = '%s::%s' % (self.__class__.__name__, inspect.stack()[1][3])
         LOG('%s# %s' % (who, msg))
+
+    def list_instances(self):
+        return self.okeanosClient.listNodes()
