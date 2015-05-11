@@ -29,6 +29,7 @@
 
   <properties>
       <connector.package.dir>slipstream_okeanos</connector.package.dir>
+      <kamaki.version>0.13.3</kamaki.version>
   </properties>
 
   <modules>
