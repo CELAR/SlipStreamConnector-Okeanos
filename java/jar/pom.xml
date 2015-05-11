@@ -94,8 +94,6 @@
               <includes>
                 <!-- Include the Okeanos Connector classes -->
                 <include>**/*</include>
-                <include>slipstream/credcache/JavaWrapper*</include>
-                <include>slipstream/credcache/**/*.clj</include>
                 <include>slipstream/connector/okeanos/*.class</include>
               </includes>
             </configuration>
