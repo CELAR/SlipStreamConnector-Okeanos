@@ -20,9 +20,7 @@ import com.sixsq.slipstream.connector.UserParametersFactoryBase;
 import com.sixsq.slipstream.exceptions.ValidationException;
 
 public class OkeanosUserParametersFactory extends UserParametersFactoryBase {
-    public static final String SERVICE_TYPE_PARAMETER_NAME = "service.type";
-    public static final String SERVICE_NAME_PARAMETER_NAME = "service.name";
-    public static final String SERVICE_REGION_PARAMETER_NAME = "service.region";
+	public static final String PROJECT_ID_PARAMETER_NAME = "project.id";
 
 	public OkeanosUserParametersFactory(String connectorInstanceName) throws ValidationException {
 		super(connectorInstanceName);
@@ -32,6 +30,7 @@ public class OkeanosUserParametersFactory extends UserParametersFactoryBase {
 	protected void initReferenceParameters() throws ValidationException {
 		putMandatoryParameter(KEY_PARAMETER_NAME, "Okeanos UUID");
 		putMandatoryPasswordParameter(SECRET_PARAMETER_NAME, "Okeanos Token");
+		putParameter(PROJECT_ID_PARAMETER_NAME, "ID of the project that provides resources (optional)", false);
 	}
 
 }
