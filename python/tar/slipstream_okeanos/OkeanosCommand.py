@@ -22,6 +22,7 @@ class OkeanosCommand(CloudClientCommand):
 
     ENDPOINT_KEY = 'endpoint'
     ENDPOINT_DEFAULT = 'https://accounts.okeanos.grnet.gr/identity/v2.0'
+    PROJECT_ID_KEY = 'project-id'
 
     def __init__(self, args=None):
         super(OkeanosCommand, self).__init__()
@@ -34,5 +35,10 @@ class OkeanosCommand(CloudClientCommand):
                           help='Cloud endpoint. (Default: %s)' % self.ENDPOINT_DEFAULT,
                           default=self.ENDPOINT_DEFAULT, metavar='ENDPOINT')
 
+        parser.add_option('--' + self.PROJECT_ID_KEY, dest=self.PROJECT_ID_KEY,
+                          help='ID of the project that provides the resources.',
+                          default=None, metavar='PROJECTID')
+
     def get_cloud_specific_user_cloud_params(self):
-        return {self.ENDPOINT_KEY: self.get_option(self.ENDPOINT_KEY)}
+        return {'project.id': self.get_option(self.PROJECT_ID_KEY),
+                self.ENDPOINT_KEY: self.get_option(self.ENDPOINT_KEY)}
