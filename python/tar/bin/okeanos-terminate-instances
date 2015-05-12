@@ -6,36 +6,3 @@ from slipstream_okeanos.OkeanosTerminateInstancesCommand import OkeanosTerminate
 
 if __name__ == "__main__":
     main(OkeanosTerminateInstances)
-
-# import warnings
-# warnings.filterwarnings("ignore", category=DeprecationWarning)
-#
-# from slipstream_okeanos.OkeanosCommand import OkeanosCommand
-# from slipstream_okeanos import LOG
-#
-# class MainProgram(OkeanosCommand):
-#     def __init__(self):
-#         super(MainProgram, self).__init__()
-#
-#     def setExtraOptions(self, parser):
-#         parser.add_option('--instance-id', dest='instanceId', help='Instance ID', default='', metavar='ID')
-#
-#     def checkExtraOptions(self, options, parser):
-#         if not options.instanceId:
-#             parser.error('Some options were not given values')
-#
-#     def doWork(self):
-#         nodeId = self.options.instanceId
-#         self.okeanosClient.deleteNodeAndWait(nodeId)
-#
-# if __name__ == "__main__":
-#     # noinspection PyBroadException
-#     try:
-#         command = MainProgram()
-#         command.doWork()
-#     except KeyboardInterrupt:
-#         print '\n\nExecution interrupted by the user... goodbye!'
-#     except:
-#         import traceback
-#         LOG("#EXCEPTION# %s" % traceback.format_exc())
-#         exit(1)
