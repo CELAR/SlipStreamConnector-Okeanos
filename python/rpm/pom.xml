@@ -80,10 +80,11 @@
               <executable>tar</executable>
               <arguments>
                 <argument>-zcf</argument>
-                <argument>${project.build.directory}/okeanoslibs.tar.gz</argument>
+                <argument>${project.build.directory}/okeanosclient.tgz</argument>
                 <argument>-C</argument>
                 <argument>${project.build.directory}/dependency</argument>
                 <argument>${connector.package.dir}</argument>
+                <argument>kamaki</argument>
               </arguments>
             </configuration>
           </execution>
@@ -118,12 +119,12 @@
 						<mapping>
 							<directory>/opt/slipstream/downloads</directory>
 							<filemode>644</filemode>
-							<username>root</username>
-							<groupname>root</groupname>
+							<username>slipstream</username>
+							<groupname>slipstream</groupname>
 							<directoryIncluded>false</directoryIncluded>
 							<sources>
 								<source>
-									<location>${project.build.directory}/okeanoslibs.tar.gz</location>
+									<location>${project.build.directory}/okeanosclient.tgz</location>
                               <includes>
                                 <include>/etc/resolv.conf</include>
                               </includes>
