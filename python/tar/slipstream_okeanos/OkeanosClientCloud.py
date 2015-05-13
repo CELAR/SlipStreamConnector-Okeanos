@@ -470,3 +470,11 @@ class OkeanosClientCloud(BaseCloudConnector):
 
     def list_instances(self):
         return self.okeanosClient.listNodes()
+
+    def _get_bootstrap_script(self, node_instance, pre_bootstrap=None,
+                              post_bootstrap=None, username=None, **kwargs):
+        _pre_export = 'pip uninstall -y kamaki || true\n'
+        _pre_export += 'pip uninstall -y kamaki || true'
+        return super(OkeanosClientCloud, self)._get_bootstrap_script(
+            node_instance, pre_export=_pre_export, pre_bootstrap=pre_bootstrap,
+            post_bootstrap=post_bootstrap, username=username)
