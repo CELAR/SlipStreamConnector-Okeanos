@@ -35,5 +35,15 @@
         <exclude>**/*.pyc</exclude>
       </excludes>
     </fileSet>
+    <fileSet>
+      <directory>${project.build.directory}/kamaki</directory>
+      <outputDirectory>kamaki</outputDirectory>
+      <includes>
+        <include>**/*</include>
+      </includes>
+      <excludes>
+        <exclude>**/*.pyc</exclude>
+      </excludes>
+    </fileSet>
   </fileSets>
 </assembly>

@@ -23,19 +23,13 @@ import com.sixsq.slipstream.persistence.ImageModule;
 public class OkeanosImageParametersFactory extends ModuleParametersFactoryBase {
 
     public static final String SECURITY_GROUPS = "security.groups";
-	/**
-	 * This is the ID of the project that gives the resources to create an image.
-	 */
-	public static final String RESOURCE_PROJECT = "resource.project";
-
 	public OkeanosImageParametersFactory(String connectorInstanceName) throws ValidationException {
 		super(connectorInstanceName);
 	}
 
 	@Override
 	protected void initReferenceParameters() throws ValidationException {
-		putParameter(ImageModule.INSTANCE_TYPE_KEY, "C2R2048D10ext_vlmc", "Flavor", true);
+		putMandatoryParameter(ImageModule.INSTANCE_TYPE_KEY, "Instance flavor", "");
         putMandatoryParameter(SECURITY_GROUPS, "Security Groups (comma separated list)", "default");
-		putMandatoryParameter(RESOURCE_PROJECT, "ID of the project that provides the resources", "");
 	}
 }

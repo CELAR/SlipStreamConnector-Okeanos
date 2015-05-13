@@ -57,8 +57,7 @@ public class OkeanosSystemConfigurationParametersFactory extends SystemConfigura
     protected void putMandatoryOrchestrationImageId() throws ValidationException {
         putMandatoryParameter(
             super.constructKey(UserParametersFactoryBase.ORCHESTRATOR_IMAGEID_PARAMETER_NAME),
-            "Image Id of the orchestrator for " + getCategory(),
-            "fe31fced-a3cf-49c6-b43b-f58f5235ba45"
+            "Image Id of the orchestrator for " + getCategory()
         );
     }
 
@@ -74,25 +73,7 @@ public class OkeanosSystemConfigurationParametersFactory extends SystemConfigura
 
 		putMandatoryParameter(
             constructKey(OkeanosUserParametersFactory.ORCHESTRATOR_INSTANCE_TYPE_PARAMETER_NAME),
-            "Okeanos flavor for the orchestrator. The actual image should support the desired Flavor",
-            "C2R2048D10ext_vlmc"
-        );
-
-        putMandatoryParameter(
-            constructKey(OkeanosUserParametersFactory.SERVICE_TYPE_PARAMETER_NAME),
-            "Type-name of the service which provides the instances functionality",
-            "compute"
-        );
-
-        putMandatoryParameter(
-            constructKey(OkeanosUserParametersFactory.SERVICE_NAME_PARAMETER_NAME),
-            "Name of the service which provides the instances functionality",
-            "cyclades_compute"
-        );
-
-        putMandatoryParameter(
-            constructKey(OkeanosUserParametersFactory.SERVICE_REGION_PARAMETER_NAME),
-            "Region used by this cloud connector", "default"
+            "Okeanos flavor for the orchestrator. The actual image should support the desired Flavor"
         );
 	}
 

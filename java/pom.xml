@@ -24,11 +24,11 @@
   <parent>
     <groupId>com.sixsq.slipstream</groupId>
     <artifactId>SlipStreamConnector-Okeanos</artifactId>
-    <version>0.5.0-SNAPSHOT</version>
+    <version>0.6.0-SNAPSHOT</version>
   </parent>
 
   <modules>
-     <module>jar</module>
+      <module>jar</module>
   </modules>
 
   <profiles>
@@ -44,6 +44,44 @@
       </modules>
     </profile>
   </profiles>
+
+  <dependencyManagement>
+    <dependencies>
+
+      <dependency>
+        <groupId>com.sixsq.slipstream</groupId>
+        <artifactId>SlipStreamPersistence</artifactId>
+        <version>${slipstream.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.sixsq.slipstream</groupId>
+        <artifactId>SlipStreamConnector</artifactId>
+        <version>${slipstream.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest-all</artifactId>
+        <version>1.1</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.8.2</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-jdk14</artifactId>
+        <version>1.7.7</version>
+      </dependency>
+
+    </dependencies>
+  </dependencyManagement>
 
   <reporting>
     <plugins>
