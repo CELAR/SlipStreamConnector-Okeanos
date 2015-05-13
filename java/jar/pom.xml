@@ -23,8 +23,8 @@
 
   <parent>
     <groupId>com.sixsq.slipstream</groupId>
-	  <artifactId>SlipStreamConnector-Okeanos-java</artifactId>
-	  <version>0.5.0-SNAPSHOT</version>
+	<artifactId>SlipStreamConnector-Okeanos-java</artifactId>
+	<version>0.6.0-SNAPSHOT</version>
   </parent>
 
   <dependencies>
@@ -94,8 +94,6 @@
               <includes>
                 <!-- Include the Okeanos Connector classes -->
                 <include>**/*</include>
-                <include>slipstream/credcache/JavaWrapper*</include>
-                <include>slipstream/credcache/**/*.clj</include>
                 <include>slipstream/connector/okeanos/*.class</include>
               </includes>
             </configuration>
