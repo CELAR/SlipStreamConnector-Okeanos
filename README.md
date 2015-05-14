@@ -42,7 +42,7 @@ for the java code (the Java part of the connector) to take effect.
 ### IaaS support libraries
 In order for the ~Okeanos connector to be fully functional, you need to install the ~Okeanos python support library, named `kamaki`, in the machine that hosts the SlipStream Server.
 
-	$ pip install kamaki
+	$ pip install kamaki==0.13.3
 
 
 ## Certified images [2014-09-18]
