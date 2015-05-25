@@ -97,8 +97,8 @@ class OkeanosClientCloud(BaseCloudConnector):
 
         return ospath.expanduser("~/.ssh/id_rsa")
 
-    def __get_vm_username_password(self, node_instance):
-        username = node_instance.get_username('root')
+    def __get_vm_username_password(self, node_instance, default_user='root'):
+        username = node_instance.get_username(default_user)
         password = None
         self.log("username = %s, password = %s" % (username, password))
         return username, password
