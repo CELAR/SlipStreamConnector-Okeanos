@@ -479,3 +479,28 @@ class OkeanosClientCloud(BaseCloudConnector):
         return super(OkeanosClientCloud, self)._get_bootstrap_script(
             node_instance, pre_export=_pre_export, pre_bootstrap=pre_bootstrap,
             post_bootstrap=post_bootstrap, username=username)
+
+    def attach_disk(self, node_instance):
+        """Attach extra disk to the VM.
+        :param node_instance: node instance object
+        :type node_instance: slipstream.NodeInstance.NodeInstance
+        :return: name of the device that was attached
+        :rtype: string
+        """
+        pass
+
+    def detach_disk(self, node_instance):
+        """Detach disk from the VM.
+        :param node_instance: node instance object
+        :type node_instance: slipstream.NodeInstance.NodeInstance
+        """
+        pass
+
+    def resize(self, node_instance):
+        """
+        :param node_instance: node instance object
+        :type node_instance: slipstream.NodeInstance.NodeInstance
+        """
+        # This is the synnefo/~okeanos flavor
+        instance_type = node_instance.get_instance_type()
+        self.log("resize(), flavor = %s" % instance_type)
