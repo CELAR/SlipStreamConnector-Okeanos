@@ -2,6 +2,5 @@
 *.iml
 target/
 java/jar/bin
-python/tar/devapi.py
 python/tar/okeanoslibs.tar.gz
 *.pyc
