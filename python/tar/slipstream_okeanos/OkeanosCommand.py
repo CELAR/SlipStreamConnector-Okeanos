@@ -15,9 +15,12 @@ limitations under the License.
 """
 
 from slipstream.command.CloudClientCommand import CloudClientCommand
+from slipstream.UserInfo import UserInfo
 from slipstream_okeanos.OkeanosClientCloud import OkeanosClientCloud
 from slipstream import util
 from os import environ as ENV
+import inspect
+from . import LOG
 
 
 class OkeanosCommand(CloudClientCommand):
@@ -37,6 +40,24 @@ class OkeanosCommand(CloudClientCommand):
     def get_connector_class(self):
         return OkeanosClientCloud
 
+    def _parse_args(self):
+        self._parse()
+        # For convenience from the command line, we inject the password (token)
+        # if we can get it from the environment
+        passwd_key = UserInfo.CLOUD_PASSWORD_KEY
+        if getattr(self.options, passwd_key, None) is None:
+            x_auth_token_name = 'X_AUTH_TOKEN'
+            if x_auth_token_name in ENV:
+                self.log('%s has been set in the environment' % x_auth_token_name)
+                x_auth_token = ENV[x_auth_token_name]
+                setattr(self.options, passwd_key, x_auth_token)
+
+        self._check_options()
+
+    def _get_common_mandatory_options(self):
+        # username is not needed at all for ~okeanos; the password (token) is enough for the API calls.
+        return [UserInfo.CLOUD_PASSWORD_KEY]
+
     def set_cloud_specific_options(self, parser):
         parser.add_option('--' + self.ENDPOINT_KEY, dest=self.ENDPOINT_KEY,
                           help='Cloud endpoint. (Default: %s)' % self.ENDPOINT_DEFAULT,
@@ -49,3 +70,7 @@ class OkeanosCommand(CloudClientCommand):
     def get_cloud_specific_user_cloud_params(self):
         return {'project.id': self.get_option(self.PROJECT_ID_KEY),
                 self.ENDPOINT_KEY: self.get_option(self.ENDPOINT_KEY)}
+
+    def log(self, msg=''):
+        who = '%s::%s' % (self.__class__.__name__, inspect.stack()[1][3])
+        LOG('%s# %s' % (who, msg))
