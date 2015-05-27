@@ -31,9 +31,13 @@ class OkeanosCommand(CloudClientCommand):
 
     def __init__(self, args=None):
         super(OkeanosCommand, self).__init__()
+        # When Python is called from Java, this is set in:
+        #
+        #   com.sixsq.slipstream.connector.CliConnectorBase::getCommonEnvironment(User)
+        #
+        # But it is not set if you try to call the okeanos-*-instances scripts
+        # directly on the command line (e.g. for testing purposes)
         key = util.ENV_CONNECTOR_INSTANCE
-        # This is not set if you try to call the okeanos-*-instances scripts
-        # directly on the command line.
         if key not in ENV:
             ENV[key] = self.get_connector_class().cloudName
 
