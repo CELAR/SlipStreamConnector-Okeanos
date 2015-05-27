@@ -16,6 +16,8 @@ limitations under the License.
 
 from slipstream.command.CloudClientCommand import CloudClientCommand
 from slipstream_okeanos.OkeanosClientCloud import OkeanosClientCloud
+from slipstream import util
+from os import environ as ENV
 
 
 class OkeanosCommand(CloudClientCommand):
@@ -26,6 +28,11 @@ class OkeanosCommand(CloudClientCommand):
 
     def __init__(self, args=None):
         super(OkeanosCommand, self).__init__()
+        key = util.ENV_CONNECTOR_INSTANCE
+        # This is not set if you try to call the okeanos-*-instances scripts
+        # directly on the command line.
+        if key not in ENV:
+            ENV[key] = self.get_connector_class().cloudName
 
     def get_connector_class(self):
         return OkeanosClientCloud
