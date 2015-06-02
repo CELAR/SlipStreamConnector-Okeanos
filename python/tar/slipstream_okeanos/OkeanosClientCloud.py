@@ -49,7 +49,7 @@ class OkeanosClientCloud(BaseCloudConnector):
         self.okeanosAuthURL = None
         self.okeanosUUID = None
         self.okeanosToken = None
-        self.okeanosClient = None
+        self.okeanosClient = None   # type: slipstream_okeanos.OkeanosNativeClient
 
     def _initialization(self, user_info):
         # userInfo =
@@ -79,10 +79,10 @@ class OkeanosClientCloud(BaseCloudConnector):
         https.patch_ignore_ssl()
 
         self.log("user_info = %s" % user_info)
-        self.okeanosAuthURL = user_info.get_cloud_endpoint()
-        self.okeanosUUID = user_info.get_cloud_username()
-        self.okeanosToken = user_info.get_cloud_password()
-        self.okeanosProjectId = user_info.get_cloud('project.id')
+        self.okeanosAuthURL = user_info.get_cloud_endpoint()        # type: str
+        self.okeanosUUID = user_info.get_cloud_username()           # type: str
+        self.okeanosToken = user_info.get_cloud_password()          # type: str
+        self.okeanosProjectId = user_info.get_cloud('project.id')   # type: str
         self.okeanosClient = OkeanosNativeClient(self.okeanosToken, self.okeanosAuthURL)
 
         self.log("self.okeanosAuthURL = %s" % self.okeanosAuthURL)
@@ -487,6 +487,18 @@ class OkeanosClientCloud(BaseCloudConnector):
         :return: name of the device that was attached
         :rtype: string
         """
+
+        self.log("attach_disk(node_instance=%s)" % node_instance)
+        # Gather parameters for the disk creation
+        serverId = node_instance.get_instance_id()
+        sizeGB = node_instance.get_cloud_parameter('disk.attach.size')
+        projectId = self.okeanosProjectId
+
+        result = self.okeanosClient.createVolume(serverId, sizeGB, projectId)
+
+        # IaaS calls go here.
+
+        #return device_name
         pass
 
     def detach_disk(self, node_instance):
@@ -494,6 +506,7 @@ class OkeanosClientCloud(BaseCloudConnector):
         :param node_instance: node instance object
         :type node_instance: slipstream.NodeInstance.NodeInstance
         """
+        self.log("detach_disk(node_instance=%s)" % node_instance)
         pass
 
     def resize(self, node_instance):
@@ -501,6 +514,8 @@ class OkeanosClientCloud(BaseCloudConnector):
         :param node_instance: node instance object
         :type node_instance: slipstream.NodeInstance.NodeInstance
         """
+        self.log("resize(node_instance=%s)" % node_instance)
+
         # This is the synnefo/~okeanos flavor
         instance_type = node_instance.get_instance_type()
-        self.log("resize(), flavor = %s" % instance_type)
+        pass

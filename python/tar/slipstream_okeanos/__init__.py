@@ -20,6 +20,7 @@ from kamaki.clients.astakos import AstakosClient
 from kamaki.clients.cyclades import CycladesClient, CycladesBlockStorageClient
 import time
 import socket
+import inspect
 
 
 class GetIP(object):
@@ -413,15 +414,32 @@ class OkeanosNativeClient(object):
             instanceInfoList.append(instanceInfo)
         return instanceInfoList
 
-    def createVolume(self, serverId, sizeGB):
+    def createVolume(self, serverId, sizeGB, projectId):
+        """
+        :param serverId: str
+        :param sizeGB: Union[str, int]
+        :param projectId: str
+        :rtype str
+        """
+        self.log("> serverId=%s, sizeGB=%s" % (serverId, sizeGB))
         # There is a nested dictionary here with only one field 'volume',
         # so we must extract it first.
-        volumeContainer = self.blockStorageClient.create_volume(sizeGB, serverId, '%s-volatile-%s' % (serverId, sizeGB))
+        volumeContainer = self.blockStorageClient.create_volume(sizeGB,
+                                                                serverId,
+                                                                '%s-volatile-%s' % (serverId, sizeGB),
+                                                                project=projectId)
+        self.log("= volumeContainer=%s" % volumeContainer)
         volume = volumeContainer[u'volume']
         volumeId = volume[u'id']
+        self.log("< volumeId=%s" % volumeId)
         return volumeId
 
     def deleteVolume(self, volumeId):
+        """
+        Deletes the volume identified by the given `volumeId`.
+        :param volumeId: str
+        :return:
+        """
         response = self.blockStorageClient.delete_volume(volumeId)
 
     def createNode(self, nodeName, flavorIdOrName, imageId,
@@ -441,11 +459,11 @@ class OkeanosNativeClient(object):
         :type flavorIdOrName: str
         :type nodeName: str
         """
-        LOG("Creating node '%s', %s, %s" % (nodeName, flavorIdOrName, imageId))
+        self.log("Creating node '%s', %s, %s" % (nodeName, flavorIdOrName, imageId))
 
         sshPubKey = sshPubKey or None
         if sshPubKey is not None:
-            LOG("User SSH public key to be injected in %s: %s" % (nodeName, sshPubKey))
+            self.log("User SSH public key to be injected in %s: %s" % (nodeName, sshPubKey))
         remoteUsergroup = remoteUsergroup or remoteUsername
         flavorId = self.getFlavorId(flavorIdOrName)
 
@@ -455,7 +473,7 @@ class OkeanosNativeClient(object):
         # c) The provided init script is injected
 
         localPubKeyData = localPubKeyData or loadPubRsaKeyData()
-        LOG("Local SSH public key to be injected in %s: %s" % (nodeName, localPubKeyData))
+        self.log("Local SSH public key to be injected in %s: %s" % (nodeName, localPubKeyData))
 
         if sshPubKey is None:
             authorized_keys = localPubKeyData
@@ -512,9 +530,9 @@ class OkeanosNativeClient(object):
             asyncInitScriptPath = None
             asyncInitScriptData = None
 
-        LOG(">> Personalities")
+        self.log(">> Personalities")
         for _p in personality:
-            LOG(">>>> %s" % _p)
+            self.log(">>>> %s" % _p)
 
         resultDict = self.cycladesClient.create_server(nodeName,
                                                        flavorId,
@@ -527,7 +545,7 @@ class OkeanosNativeClient(object):
                                   initScriptPath=initScriptPath,
                                   initScriptData=initScriptData,
                                   asyncInitScriptPath=asyncInitScriptPath)
-        LOG("Created node %s status %s, adminPass = %s, ip4s = %s" % (nodeDetails.id, nodeDetails.status.okeanosStatus, nodeDetails.adminPass, nodeDetails.ipv4s))
+        self.log("Created node %s status %s, adminPass = %s, ip4s = %s" % (nodeDetails.id, nodeDetails.status.okeanosStatus, nodeDetails.adminPass, nodeDetails.ipv4s))
         return nodeDetails
 
     def runCommandOnNode(self, nodeDetails, command,
@@ -558,7 +576,7 @@ class OkeanosNativeClient(object):
             if checkSshOnHost(hostname, username=username, localPrivKey=localPrivKey, timeout=timeout):
                 t1 = time.time()
                 dtsec = t1 - t0
-                LOG("SSH good for %s@%s after %s sec" % (username, hostname, dtsec))
+                self.log("SSH good for %s@%s after %s sec" % (username, hostname, dtsec))
                 break
 
     def waitSshOnNode(self, nodeDetails, username="root", localPrivKey=None, timeout=None):
@@ -585,7 +603,7 @@ class OkeanosNativeClient(object):
             nodeDetails = self.getNodeDetails(nodeId)
         t1 = time.time()
         dtsec = t1 - t0
-        LOG("Node %s status %s after %s sec" % (nodeId, expectedOkeanosStatus, dtsec))
+        self.log("Node %s status %s after %s sec" % (nodeId, expectedOkeanosStatus, dtsec))
         return nodeDetails
 
     def createNodeAndWait(self, nodeName, flavorIdOrName, imageId, sshPubKey, initScriptPathAndData=None,
@@ -619,13 +637,13 @@ class OkeanosNativeClient(object):
         # attach any additional disk
         hostIP = nodeDetails.ipv4s[0]
         if extraVolatileDiskGB:
-            LOG("Creating volatile disk of size %s GB for machine IP=%s, id=%s" % (extraVolatileDiskGB, hostIP, nodeId))
+            self.log("Creating volatile disk of size %s GB for machine IP=%s, id=%s" % (extraVolatileDiskGB, hostIP, nodeId))
             volumeId = self.createVolume(nodeId, extraVolatileDiskGB)
-            LOG("Created volumeId=%s of size %s GB for machine IP=%s, id=%s" % (volumeId, extraVolatileDiskGB, hostIP, nodeId))
+            self.log("Created volumeId=%s of size %s GB for machine IP=%s, id=%s" % (volumeId, extraVolatileDiskGB, hostIP, nodeId))
             # We do nothing more with the volumeId.
             # When the VM is destroyed by the IaaS, the extra disk is automatically destroyed as well.
         else:
-            LOG("No need for extra volatile disk for machine IP=%s, id=%s" % (hostIP, nodeId))
+            self.log("No need for extra volatile disk for machine IP=%s, id=%s" % (hostIP, nodeId))
 
         # Some times, right after node is reported ACTIVE, network is unreachable or SSH is not immediately ready.
         # We have to cope with that by waiting.
@@ -645,11 +663,11 @@ class OkeanosNativeClient(object):
         :rtype : NodeDetails
         :type nodeId: str
         """
-        LOG("Shutting down nodeId %s" % nodeId)
+        self.log("Shutting down nodeId %s" % nodeId)
         nodeDetails = self.getNodeDetails(nodeId)
         if not nodeDetails.status.isStopped():
             self.cycladesClient.shutdown_server(nodeId)
-            LOG("Shutdown node %s status %s" % (nodeId, nodeDetails.status.okeanosStatus))
+            self.log("Shutdown node %s status %s" % (nodeId, nodeDetails.status.okeanosStatus))
         return nodeDetails
 
     def shutdownNodeAndWait(self, nodeId):
@@ -661,7 +679,7 @@ class OkeanosNativeClient(object):
         if not nodeDetails.status.isStopped():
             nodeDetailsWait = self.waitNodeStatus(nodeId, NodeStatus.STOPPED)
             nodeDetails.updateStatusFrom(nodeDetailsWait)
-            LOG("Shutdown node %s status %s" % (nodeId, nodeDetails.status.okeanosStatus))
+            self.log("Shutdown node %s status %s" % (nodeId, nodeDetails.status.okeanosStatus))
         return nodeDetails
 
     def deleteNode(self, nodeId):
@@ -669,11 +687,11 @@ class OkeanosNativeClient(object):
         :rtype : NodeDetails
         :type nodeId: str
         """
-        LOG("Deleting nodeId %s" % nodeId)
+        self.log("Deleting nodeId %s" % nodeId)
         nodeDetails = self.getNodeDetails(nodeId)
         if not nodeDetails.status.isDeleted():
             self.cycladesClient.delete_server(nodeId)
-            LOG("Deleted node %s status %s" % (nodeId, nodeDetails.status.okeanosStatus))
+            self.log("Deleted node %s status %s" % (nodeId, nodeDetails.status.okeanosStatus))
         return nodeDetails
 
     def deleteNodeAndWait(self, nodeId):
@@ -685,5 +703,9 @@ class OkeanosNativeClient(object):
         if not nodeDetails.status.isDeleted():
             nodeDetailsWait = self.waitNodeStatus(nodeId, NodeStatus.DELETED)
             nodeDetails.updateStatusFrom(nodeDetailsWait)
-            LOG("Deleted node %s status %s" % (nodeId, nodeDetails.status.okeanosStatus))
+            self.log("Deleted node %s status %s" % (nodeId, nodeDetails.status.okeanosStatus))
         return nodeDetails
+
+    def log(self, msg=''):
+        who = '%s::%s' % (self.__class__.__name__, inspect.stack()[1][3])
+        LOG('%s# %s' % (who, msg))
