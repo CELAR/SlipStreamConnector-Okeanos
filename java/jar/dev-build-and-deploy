@@ -9,11 +9,10 @@
 set -e
 
 HERE="$(cd "$(dirname $0)" && pwd -P)"
+. "${HERE}"/dev-common.sh
 
 LOCALNOW=$(date +'%Y%m%d.%H%M.%S')
 
-VERSION=0.6.0-SNAPSHOT
-DEVMACHINE=slipstream3
 LOCALJAR=SlipStreamConnector-Okeanos-java-jar-${VERSION}.jar
 LOCALPATH="${HERE}/target/${LOCALJAR}"
 REMOTEJAR=slipstream-connector-okeanos.jar
