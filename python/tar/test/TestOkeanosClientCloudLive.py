@@ -156,23 +156,25 @@ lvs
 #         self.client.deregister_image(new_id)
 #         print('Done.')
 
-    def _start_wait_running_stop_images(self):
+    def _start_images(self):
         for node_instance in self.node_instances:
             self.log('Starting %s' % node_instance)
 
+        self.client.start_nodes_and_clients(self.user_info, self.node_instances)
+        util.printAndFlush('Instances started\n')
+        vms = self.client.get_vms()
+        assert len(vms) == self.multiplicity
+
+    def _wait_running_images(self):
+        # Wait VMs enter running state.
+        #             for vm in vms.values():
+        #                 self.client._wait_vm_in_state_running_or_timeout(vm['id'])
+        time.sleep(0)   # No need for ~Okeanos, the connector does the waiting.
+
+    def _start_wait_running_stop_images(self):
         try:
-            self.client.start_nodes_and_clients(self.user_info, self.node_instances)
-
-            util.printAndFlush('Instances started\n')
-
-            vms = self.client.get_vms()
-            assert len(vms) == self.multiplicity
-
-            # Wait VMs enter running state.
-#             for vm in vms.values():
-#                 self.client._wait_vm_in_state_running_or_timeout(vm['id'])
-
-            time.sleep(2)
+            self._start_images()
+            self._wait_running_images()
         finally:
             self.client.stop_deployment()
 
