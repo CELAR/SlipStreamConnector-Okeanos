@@ -1,10 +1,27 @@
-#!/bin/sh
+#!/bin/bash
 
 # Helper script during development to build and deploy the java part
-# of the connector. It assumes you have a machine named slipstream5
+# of the connector. It assumes you have a machine named ${DEVMACHINE}
 # defined in your SSH config file.
 
 # Do not forget to restart the SlipStream server
 
-mvn package && \
-scp target/SlipStreamConnector-Okeanos-java-jar-0.5.0-SNAPSHOT.jar slipstream5:/opt/slipstream/server/lib/connectors/slipstream-connector-okeanos.jar
+set -e
+
+HERE="$(cd "$(dirname $0)" && pwd -P)"
+
+LOCALNOW=$(date +'%Y%m%d.%H%M.%S')
+
+VERSION=0.6.0-SNAPSHOT
+DEVMACHINE=slipstream3
+LOCALJAR=SlipStreamConnector-Okeanos-java-jar-${VERSION}.jar
+LOCALPATH="${HERE}/target/${LOCALJAR}"
+REMOTEJAR=slipstream-connector-okeanos.jar
+REMOTEFOLDER=/opt/slipstream/server/lib/connectors
+REMOTEPATH=${REMOTEFOLDER}/${REMOTEJAR}
+
+mvn package
+ls -al "${LOCALPATH}"
+ssh "${DEVMACHINE}" "cp $REMOTEPATH $REMOTEPATH.$LOCALNOW; chown slipstream:slipstream $REMOTEPATH.$LOCALNOW"
+scp -C "${LOCALPATH}" "${DEVMACHINE}":${REMOTEPATH}
+ssh "${DEVMACHINE}" "ls -al ${REMOTEFOLDER}"
