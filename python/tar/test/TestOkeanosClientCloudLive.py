@@ -1,12 +1,14 @@
 import os
 import unittest
 import time
+import inspect
 from mock import Mock
 
 from slipstream import util
 
 from slipstream.ConfigHolder import ConfigHolder
 from slipstream.SlipStreamHttpClient import UserInfo
+from slipstream_okeanos import LOG
 from slipstream_okeanos.OkeanosClientCloud import getConnector, getConnectorClass
 from slipstream.NodeInstance import NodeInstance
 from slipstream.NodeDecorator import NodeDecorator, \
@@ -44,6 +46,9 @@ def publish_vm_info(self, vm, node_instance):
 
 
 class TestOkeanosClientCloud(unittest.TestCase):
+    def log(self, msg=''):
+        who = '%s::%s' % (self.__class__.__name__, inspect.stack()[1][3])
+        LOG('%s# %s' % (who, msg))
 
     def setUp(self):
         cn = getConnectorClass().cloudName
@@ -152,6 +157,8 @@ lvs
 #         print('Done.')
 
     def _start_wait_running_stop_images(self):
+        for node_instance in self.node_instances:
+            self.log('Starting %s' % node_instance)
 
         try:
             self.client.start_nodes_and_clients(self.user_info, self.node_instances)
