@@ -88,6 +88,42 @@ def listVolumes(details=True):
     :return:
     """
     response = bsc.list_volumes(details)
+
+    # response is an array of these
+    # {
+    #     u'status': u'in_use',
+    #     u'user_id': u'fc95f201-d5a9-46fa-8ede-b8983b420a40',
+    #     u'attachments': [
+    #         {
+    #             u'server_id': 587337,
+    #             u'device_index': 0,
+    #             u'volume_id': 987
+    #         }
+    #     ],
+    #     u'links': [
+    #         {
+    #             u'href': u'https://cyclades.okeanos.grnet.gr/volume/v2.0/volumes/987',
+    #             u'rel': u'self'
+    #         }, {
+    #             u'href': u'https://cyclades.okeanos.grnet.gr/volume/v2.0/volumes/987',
+    #             u'rel': u'bookmark'
+    #         }
+    #     ],
+    #     u'deleted': False,
+    #     u'tenant_id': u'464eb0e7-b556-4fc7-8afb-d590feebaad8',
+    #     u'created_at': u'2014-11-17T08:49:15.539115+00:00',
+    #     u'metadata': {},
+    #     u'source_volid': None,
+    #     u'delete_on_termination': True,
+    #     u'image_id': None,
+    #     u'volume_type': 1,
+    #     u'snapshot_id': None,
+    #     u'display_name': u'boot volume',
+    #     u'display_description': u'boot volume',
+    #     u'id': u'987',
+    #     u'size': 20
+    # }
+
     return response
 
 def findVolumeByName(name):
@@ -101,7 +137,7 @@ def findVolumeByName(name):
 def deleteVolumeByName(name):
     volumeOpt = findVolumeByName(name)
     if volumeOpt is None:
-        return {}
+        return None
     volumeId = volumeOpt['id']
     response = deleteVolume(volumeId)
     return response
