@@ -45,10 +45,41 @@ def printEndpoints():
 
 def createVolume(sizeGB, name, serverId=serverId, projectId=projectId):
     response = bsc.create_volume(sizeGB, server_id=serverId, display_name=name, project=projectId)
+
+    # response is something like this
+    # {
+    #     u'display_name': u'foo',
+    #     u'id': u'46974',
+    #     u'links': [
+    #         {
+    #             u'href': u'https://cyclades.okeanos.grnet.gr/volume/v2.0/volumes/46974',
+    #             u'rel': u'self'
+    #         }, {
+    #             u'href': u'https://cyclades.okeanos.grnet.gr/volume/v2.0/volumes/46974',
+    #             u'rel': u'bookmark'
+    #         }
+    #     ]
+    # }
+
     return response
 
 def deleteVolume(volumeId):
     response = bsc.delete_volume(volumeId)
+
+    # response is something like this (the HTTP response headers directly)
+    # {
+    #     'content-length': '0',
+    #     'content-language': 'en-us',
+    #     'expires': 'Tue, 16 Jun 2015 11:59:05 GMT',
+    #     'vary': 'X-Auth-Token, Accept-Language',
+    #     'server': 'nginx/1.2.1',
+    #     'last-modified': 'Tue, 16 Jun 2015 11:59:05 GMT',
+    #     'connection': 'keep-alive',
+    #     'cache-control': 'no-cache, no-store, must-revalidate, max-age=0',
+    #     'date': 'Tue, 16 Jun 2015 11:59:05 GMT',
+    #     'content-type': 'application/json; charset=UTF-8'
+    # }
+
     return response
 
 def listVolumes(details=True):
