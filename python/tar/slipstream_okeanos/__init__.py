@@ -421,7 +421,7 @@ class OkeanosNativeClient(object):
         :param projectId: str
         :rtype str
         """
-        self.log("> serverId=%s, sizeGB=%s" % (serverId, sizeGB))
+        self.log("> serverId=%s, sizeGB=%s, projectId=%s" % (serverId, sizeGB, projectId))
         # There is a nested dictionary here with only one field 'volume',
         # so we must extract it first.
         volumeContainer = self.blockStorageClient.create_volume(sizeGB,
@@ -441,6 +441,7 @@ class OkeanosNativeClient(object):
         :return:
         """
         response = self.blockStorageClient.delete_volume(volumeId)
+        return response
 
     def createNode(self, nodeName, flavorIdOrName, imageId,
                    sshPubKey=None,
