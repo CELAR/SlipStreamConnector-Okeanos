@@ -422,17 +422,29 @@ class OkeanosNativeClient(object):
         :rtype str
         """
         self.log("> serverId=%s, sizeGB=%s, projectId=%s" % (serverId, sizeGB, projectId))
-        # There is a nested dictionary here with only one field 'volume',
-        # so we must extract it first.
-        volumeContainer = self.blockStorageClient.create_volume(sizeGB,
-                                                                serverId,
-                                                                '%s-volatile-%s' % (serverId, sizeGB),
-                                                                project=projectId)
-        self.log("= volumeContainer=%s" % volumeContainer)
-        volume = volumeContainer[u'volume']
-        volumeId = volume[u'id']
-        self.log("< volumeId=%s" % volumeId)
-        return volumeId
+
+        response = self.blockStorageClient.create_volume(sizeGB,
+                                                         serverId,
+                                                         '%s-vol-%s' % (serverId, sizeGB),
+                                                         project=projectId)
+        # response is something like this
+        # {
+        #     u'display_name': u'foo',
+        #     u'id': u'46974',
+        #     u'links': [
+        #         {
+        #             u'href': u'https://cyclades.okeanos.grnet.gr/volume/v2.0/volumes/46974',
+        #             u'rel': u'self'
+        #         }, {
+        #             u'href': u'https://cyclades.okeanos.grnet.gr/volume/v2.0/volumes/46974',
+        #             u'rel': u'bookmark'
+        #         }
+        #     ]
+        # }
+
+        self.log("< %s" % response)
+
+        return response
 
     def deleteVolume(self, volumeId):
         """
