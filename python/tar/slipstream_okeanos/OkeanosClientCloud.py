@@ -37,7 +37,7 @@ class OkeanosClientCloud(BaseCloudConnector):
     cloudName = 'okeanos'
 
     def __init__(self, configHolder):
-        self.log(configHolder.config)
+        self.log("configHolder = %s" % configHolder)
         self.run_category = getattr(configHolder, KEY_RUN_CATEGORY, None)
         self.log("self.run_category = %s" % self.run_category)
 
@@ -46,9 +46,9 @@ class OkeanosClientCloud(BaseCloudConnector):
 
         self._set_capabilities(contextualization=True, orchestrator_can_kill_itself_or_its_vapp=True)
 
-        self.okeanosAuthURL = None
-        self.okeanosUUID = None
-        self.okeanosToken = None
+        self.okeanosAuthURL = None  # type: str
+        self.okeanosUUID = None     # type: str
+        self.okeanosToken = None    # type: str
         self.okeanosClient = None   # type: slipstream_okeanos.OkeanosNativeClient
 
     def _initialization(self, user_info):
@@ -480,7 +480,7 @@ class OkeanosClientCloud(BaseCloudConnector):
             node_instance, pre_export=_pre_export, pre_bootstrap=pre_bootstrap,
             post_bootstrap=post_bootstrap, username=username)
 
-    def attach_disk(self, node_instance):
+    def _attach_disk(self, node_instance):
         """Attach extra disk to the VM.
         :param node_instance: node instance object
         :type node_instance: slipstream.NodeInstance.NodeInstance
@@ -491,25 +491,26 @@ class OkeanosClientCloud(BaseCloudConnector):
         self.log("attach_disk(node_instance=%s)" % node_instance)
         # Gather parameters for the disk creation
         serverId = node_instance.get_instance_id()
-        sizeGB = node_instance.get_cloud_parameter('disk.attach.size')
+        sizeGB = node_instance.get_disk_attach_size()
         projectId = self.okeanosProjectId
+        self.log("serverId = %s, sizeGB = %s, projectId = %s" % (serverId, sizeGB, projectId))
 
         result = self.okeanosClient.createVolume(serverId, sizeGB, projectId)
 
         # IaaS calls go here.
 
         #return device_name
-        pass
+        return result
 
-    def detach_disk(self, node_instance):
+    def _detach_disk(self, node_instance):
         """Detach disk from the VM.
         :param node_instance: node instance object
         :type node_instance: slipstream.NodeInstance.NodeInstance
         """
         self.log("detach_disk(node_instance=%s)" % node_instance)
-        pass
+        raise NotImplementedError()
 
-    def resize(self, node_instance):
+    def _resize(self, node_instance):
         """
         :param node_instance: node instance object
         :type node_instance: slipstream.NodeInstance.NodeInstance
@@ -518,4 +519,4 @@ class OkeanosClientCloud(BaseCloudConnector):
 
         # This is the synnefo/~okeanos flavor
         instance_type = node_instance.get_instance_type()
-        pass
+        raise NotImplementedError()
