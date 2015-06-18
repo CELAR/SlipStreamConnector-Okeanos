@@ -469,6 +469,25 @@ class OkeanosNativeClient(object):
 
         return response
 
+    def attachVolume(self, serverId, sizeGB, projectId):
+        """Create and attach an extra volume to the VM, returning the volume name, the volume id and the device name"""
+        self.log("> serverId = %s, sizeGB = %s, projectId = %s" % (serverId, sizeGB, projectId))
+
+        _, partitions0 = self.getNodePartitions(serverId)
+        result = self.createVolume(serverId, sizeGB, projectId)
+
+        # NOTE we use default stuff fro SSH here!
+        new_partition = self.waitForExtraNodePartition(serverId, partitions0)
+        # TODO Check if None
+
+        volumeName = result['display_name']
+        volumeId = result['id']
+        deviceName = "/dev/%s" % new_partition
+
+        result = (volumeName, volumeId, deviceName)
+        self.log("< volumeName = %s, volumeId = %s, deviceName = %s" % result)
+        return result
+
     def deleteVolume(self, volumeId):
         """
         Deletes the volume identified by the given `volumeId`.
@@ -745,3 +764,56 @@ class OkeanosNativeClient(object):
     def log(self, msg=''):
         who = '%s::%s' % (self.__class__.__name__, inspect.stack()[1][3])
         LOG('%s# %s' % (who, msg))
+
+    def getNodeIPv4(self, nodeId):
+        nodeDetails = self.getNodeDetails(nodeId)
+        ipv4 = nodeDetails.ipv4s[0]
+        LOG("< for nodeId = %s, IPv4 = %s" % (nodeId, ipv4))
+        return ipv4
+
+    def getNodePartitions(self, nodeId,
+                          username='root',
+                          localPrivKey=None,
+                          timeout=None,
+                          ssh=None):
+        ipv4 = self.getNodeIPv4(nodeId)
+        status, partitions = getHostPartitions(ipv4,
+                                               username=username,
+                                               localPrivKey=localPrivKey,
+                                               timeout=timeout,
+                                               ssh=ssh)
+        return status, partitions
+
+    def waitForExtraNodePartition(self, serverId, partitions,
+                                  username='root',
+                                  localPrivKey=None,
+                                  timeout=None,
+                                  ssh=None):
+        """
+        Given the set of pre-existing partitions, we wait until a new one appears and then we return it.
+        :param serverId: str
+        :param partitions: set[str]
+        :return: the extra partition. prepend '/dev/' to get the device name
+        """
+        def getem():
+            return self.getNodePartitions(serverId,
+                                          username=username,
+                                          localPrivKey=localPrivKey,
+                                          timeout=timeout,
+                                          ssh=ssh)
+
+        self.log("Waiting, current partitions: %s" % partitions)
+        status1, partitions1 = getem()
+        if status1 != 0:
+            return None
+
+        while partitions == partitions1:
+            self.log("Looping, new partitions: %s" % partitions1)
+            status1, partitions1 = getem()
+            if status1 != 0:
+                return None
+
+        # We assume one more is added ...
+        newPartition = partitions1.difference(partitions)
+        self.log("< For serverId = %s, new partition = %s" % (serverId, newPartition))
+        return newPartition

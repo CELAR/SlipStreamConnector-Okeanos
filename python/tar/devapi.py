@@ -148,3 +148,6 @@ def procPartitions(host):
     print "cmd = %s" % cmd
     return runCommandOnHost(host, cmd)
 
+def attachVolume(serverId=serverId, sizeGB=1, projectId=projectId):
+    return onc.attachVolume(serverId, sizeGB, projectId)
+
