@@ -495,12 +495,8 @@ class OkeanosClientCloud(BaseCloudConnector):
         projectId = self.okeanosProjectId
         self.log("serverId = %s, sizeGB = %s, projectId = %s" % (serverId, sizeGB, projectId))
 
-        result = self.okeanosClient.createVolume(serverId, sizeGB, projectId)
-
-        # IaaS calls go here.
-
-        #return device_name
-        return result
+        volumeName, volumeId, deviceName = self.okeanosClient.attachVolume(serverId, sizeGB, projectId)
+        return deviceName
 
     def _detach_disk(self, node_instance):
         """Detach disk from the VM.
