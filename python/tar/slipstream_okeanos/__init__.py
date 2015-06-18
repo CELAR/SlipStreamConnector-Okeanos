@@ -254,6 +254,29 @@ class NodeDetails(object):
         self.updateIPsFrom(that)
 
 
+def getHostPartitions(hostname,
+                      username='root',
+                      localPrivKey=None,
+                      timeout=None,
+                      ssh=None):
+    """
+    Retrieve the partitions according to /proc/partitions.
+    See http://www.tldp.org/HOWTO/Partition-Mass-Storage-Definitions-Naming-HOWTO/x160.html
+    """
+    command = "/bin/bash -c 'cat /proc/partitions | sed 1d | sed /^\\$/d | awk \\'{print $4}\\''"
+    LOG("> host = %s, running %s" % (hostname, command))
+    exitCode, stdoutLines, stderrLines = runCommandOnHost(hostname, command,
+                                                          username=username,
+                                                          localPrivKey=localPrivKey,
+                                                          timeout=timeout,
+                                                          ssh=ssh)
+    status = exitCode
+    device_list = [line.rstrip() for line in stdoutLines]   # remove trailing '\n'
+    devices = set(device_list)
+    LOG("< status = %s, devices = %s" % (status, devices))
+    return status, devices
+
+
 def runCommandOnHost(hostname, command,
                      username='root',
                      localPrivKey=None,
