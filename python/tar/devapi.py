@@ -5,6 +5,7 @@ from kamaki.clients.astakos import AstakosClient
 from kamaki.clients.cyclades import CycladesClient, CycladesBlockStorageClient
 from kamaki.clients.utils import https
 from slipstream_okeanos import OkeanosNativeClient
+from slipstream_okeanos import runCommandOnHost
 
 https.patch_ignore_ssl()
 
@@ -141,3 +142,9 @@ def deleteVolumeByName(name):
     volumeId = volumeOpt['id']
     response = deleteVolume(volumeId)
     return response
+
+def procPartitions(host):
+    cmd = "/bin/bash -c 'cat /proc/partitions | sed 1d | sed /^\\$/d | awk \\'{print $4}\\''"
+    print "cmd = %s" % cmd
+    return runCommandOnHost(host, cmd)
+
