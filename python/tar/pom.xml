@@ -191,7 +191,6 @@
             </executions>
           </plugin>
 
-          <!--https://pypi.python.org/packages/source/p/progress/progress-1.2.tar.gz-->
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>exec-maven-plugin</artifactId>
