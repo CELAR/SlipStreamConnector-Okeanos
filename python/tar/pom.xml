@@ -56,13 +56,58 @@
         </executions>
       </plugin>
 
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+
+              <execution>
+                <id>get-kamaki</id>
+                <phase>process-resources</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <executable>curl</executable>
+                  <arguments>
+                    <argument>-sSf</argument>
+                    <argument>-L</argument>
+                    <argument>-o</argument>
+                    <argument>${project.build.directory}/kamaki-${kamaki.version}.tar.gz</argument>
+                    <argument>https://pypi.python.org/packages/source/k/kamaki/kamaki-${kamaki.version}.tar.gz</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+
+              <execution>
+                <id>unpack-kamaki</id>
+                <phase>process-resources</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <workingDirectory>${project.build.directory}</workingDirectory>
+                  <executable>tar</executable>
+                  <arguments>
+                    <argument>--strip-components</argument>
+                    <argument>1</argument>
+                    <argument>-zxvf</argument>
+                    <argument>kamaki-${kamaki.version}.tar.gz</argument>
+                    <argument>kamaki-${kamaki.version}/kamaki</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+
+            </executions>
+          </plugin>
+
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <executions>
 
           <execution>
-            <id>get-kamaki</id>
+            <id>get-astakosclient</id>
             <phase>process-resources</phase>
             <goals>
               <goal>exec</goal>
@@ -73,14 +118,14 @@
                 <argument>-sSf</argument>
                 <argument>-L</argument>
                 <argument>-o</argument>
-                <argument>${project.build.directory}/kamaki-${kamaki.version}.tar.gz</argument>
-                <argument>https://pypi.python.org/packages/source/k/kamaki/kamaki-${kamaki.version}.tar.gz</argument>
+                <argument>${project.build.directory}/astakosclient-${astakosclient.version}.tar.gz</argument>
+                <argument>https://pypi.python.org/packages/source/a/astakosclient/astakosclient-${astakosclient.version}.tar.gz</argument>
               </arguments>
             </configuration>
           </execution>
 
           <execution>
-            <id>unpack-kamaki</id>
+            <id>unpack-astakosclient</id>
             <phase>process-resources</phase>
             <goals>
               <goal>exec</goal>
@@ -92,14 +137,105 @@
                 <argument>--strip-components</argument>
                 <argument>1</argument>
                 <argument>-zxvf</argument>
-                <argument>kamaki-${kamaki.version}.tar.gz</argument>
-                <argument>kamaki-${kamaki.version}/kamaki</argument>
+                <argument>astakosclient-${astakosclient.version}.tar.gz</argument>
+                <argument>astakosclient-${astakosclient.version}/astakosclient</argument>
               </arguments>
             </configuration>
           </execution>
 
         </executions>
       </plugin>
+
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+
+              <execution>
+                <id>get-objpool</id>
+                <phase>process-resources</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <executable>curl</executable>
+                  <arguments>
+                    <argument>-sSf</argument>
+                    <argument>-L</argument>
+                    <argument>-o</argument>
+                    <argument>${project.build.directory}/objpool-${objpool.version}.tar.gz</argument>
+                    <argument>https://pypi.python.org/packages/source/o/objpool/objpool-${objpool.version}.tar.gz</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+
+              <execution>
+                <id>unpack-objpool</id>
+                <phase>process-resources</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <workingDirectory>${project.build.directory}</workingDirectory>
+                  <executable>tar</executable>
+                  <arguments>
+                    <argument>--strip-components</argument>
+                    <argument>1</argument>
+                    <argument>-zxvf</argument>
+                    <argument>objpool-${objpool.version}.tar.gz</argument>
+                    <argument>objpool-${objpool.version}/objpool</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+
+            </executions>
+          </plugin>
+
+          <!--https://pypi.python.org/packages/source/p/progress/progress-1.2.tar.gz-->
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+
+              <execution>
+                <id>get-progress</id>
+                <phase>process-resources</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <executable>curl</executable>
+                  <arguments>
+                    <argument>-sSf</argument>
+                    <argument>-L</argument>
+                    <argument>-o</argument>
+                    <argument>${project.build.directory}/progress-${progress.version}.tar.gz</argument>
+                    <argument>https://pypi.python.org/packages/source/p/progress/progress-${progress.version}.tar.gz</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+
+              <execution>
+                <id>unpack-progress</id>
+                <phase>process-resources</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <workingDirectory>${project.build.directory}</workingDirectory>
+                  <executable>tar</executable>
+                  <arguments>
+                    <argument>--strip-components</argument>
+                    <argument>1</argument>
+                    <argument>-zxvf</argument>
+                    <argument>progress-${progress.version}.tar.gz</argument>
+                    <argument>progress-${progress.version}/progress</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+
+            </executions>
+          </plugin>
 
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

@@ -45,5 +45,35 @@
         <exclude>**/*.pyc</exclude>
       </excludes>
     </fileSet>
+    <fileSet>
+      <directory>${project.build.directory}/astakosclient</directory>
+      <outputDirectory>astakosclient</outputDirectory>
+      <includes>
+        <include>**/*</include>
+      </includes>
+      <excludes>
+        <exclude>**/*.pyc</exclude>
+      </excludes>
+    </fileSet>
+    <fileSet>
+      <directory>${project.build.directory}/objpool</directory>
+      <outputDirectory>objpool</outputDirectory>
+      <includes>
+        <include>**/*</include>
+      </includes>
+      <excludes>
+        <exclude>**/*.pyc</exclude>
+      </excludes>
+    </fileSet>
+    <fileSet>
+      <directory>${project.build.directory}/progress</directory>
+      <outputDirectory>progress</outputDirectory>
+      <includes>
+        <include>**/*</include>
+      </includes>
+      <excludes>
+        <exclude>**/*.pyc</exclude>
+      </excludes>
+    </fileSet>
   </fileSets>
 </assembly>
