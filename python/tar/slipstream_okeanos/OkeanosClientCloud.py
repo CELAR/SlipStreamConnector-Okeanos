@@ -488,7 +488,7 @@ class OkeanosClientCloud(BaseCloudConnector):
         :rtype: string
         """
 
-        self.log("attach_disk(node_instance=%s)" % node_instance)
+        self.log("> node_instance = %s" % node_instance)
         # Gather parameters for the disk creation
         serverId = node_instance.get_instance_id()
         sizeGB = node_instance.get_disk_attach_size()
@@ -496,15 +496,21 @@ class OkeanosClientCloud(BaseCloudConnector):
         self.log("serverId = %s, sizeGB = %s, projectId = %s" % (serverId, sizeGB, projectId))
 
         volumeName, volumeId, deviceName = self.okeanosClient.attachVolume(serverId, sizeGB, projectId)
-        return deviceName
+        syntheticName = "%s,%s" % (volumeId, deviceName)
+        self.log("< %s" % syntheticName)
+        return syntheticName
 
     def _detach_disk(self, node_instance):
         """Detach disk from the VM.
         :param node_instance: node instance object
         :type node_instance: slipstream.NodeInstance.NodeInstance
         """
-        self.log("detach_disk(node_instance=%s)" % node_instance)
-        raise NotImplementedError()
+        self.log("> node_instance = %s" % node_instance)
+        syntheticName = node_instance.get_disk_detach_device()
+        self.log(" syntheticName = %s" % syntheticName)
+        volumeId, deviceName = syntheticName.split(',')
+        _ = self.okeanosClient.deleteVolume(volumeId)
+        return syntheticName
 
     def _resize(self, node_instance):
         """
