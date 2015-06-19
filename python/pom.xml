@@ -29,7 +29,10 @@
 
   <properties>
       <connector.package.dir>slipstream_okeanos</connector.package.dir>
-      <kamaki.version>0.13.3</kamaki.version>
+      <kamaki.version>0.13.4</kamaki.version>
+      <astakosclient.version>0.16</astakosclient.version>
+      <objpool.version>0.4</objpool.version>
+      <progress.version>1.2</progress.version>
   </properties>
 
   <modules>

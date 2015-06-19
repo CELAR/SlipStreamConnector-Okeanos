@@ -1,0 +1,8 @@
+kamaki==0.13.4
+# Full set of required packages for kamaki==0.13.4
+#astakosclient==0.16
+#objpool==0.4
+#progress==1.2
+#python-dateutil==2.4.2
+#six==1.9.0
+
