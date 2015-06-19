@@ -817,3 +817,16 @@ class OkeanosNativeClient(object):
         newPartition = partitions1.difference(partitions)
         self.log("< For serverId = %s, new partition = %s" % (serverId, newPartition))
         return newPartition
+
+    def resizeNode(self, serverId, flavorIdOrName):
+        flavorId = self.getFlavorId(flavorIdOrName)
+        self.log("flavorId = %s [given: %s]" % (flavorId, flavorIdOrName))
+        # Hot resizing is not supported, so we must shut the server down first
+        self.cycladesClient.shutdown_server(serverId)
+        self.waitNodeStatus(serverId, 'STOPPED')
+        resizeResponse = self.cycladesClient.resize_server(serverId, flavorId)
+        self.cycladesClient.start_server(serverId)
+        self.waitNodeStatus(serverId, 'ACTIVE')
+
+        self.log("< %s" % resizeResponse)
+        return resizeResponse

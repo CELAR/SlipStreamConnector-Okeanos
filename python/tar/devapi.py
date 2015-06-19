@@ -151,3 +151,5 @@ def procPartitions(host):
 def attachVolume(serverId=serverId, sizeGB=1, projectId=projectId):
     return onc.attachVolume(serverId, sizeGB, projectId)
 
+def resizeServer(serverId=serverId, flavor='C2R2048D10drbd'):
+    return onc.resizeNode(serverId, flavor)
