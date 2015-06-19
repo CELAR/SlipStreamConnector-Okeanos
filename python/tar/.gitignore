@@ -1,0 +1,3 @@
+bin/slipstream.client.conf
+test/run.log*
+deploy-locally
