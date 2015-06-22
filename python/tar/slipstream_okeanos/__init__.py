@@ -718,11 +718,13 @@ class OkeanosNativeClient(object):
         :rtype : NodeDetails
         :type nodeId: str
         """
-        self.log("Shutting down nodeId %s" % nodeId)
+        self.log("Shutting down node %s" % nodeId)
         nodeDetails = self.getNodeDetails(nodeId)
         if not nodeDetails.status.isStopped():
             self.cycladesClient.shutdown_server(nodeId)
             self.log("Shutdown node %s status %s" % (nodeId, nodeDetails.status.okeanosStatus))
+        else:
+            self.log("Node %s already shut down" % nodeId)
         return nodeDetails
 
     def shutdownNodeAndWait(self, nodeId):
@@ -820,13 +822,39 @@ class OkeanosNativeClient(object):
 
     def resizeNode(self, serverId, flavorIdOrName):
         flavorId = self.getFlavorId(flavorIdOrName)
-        self.log("flavorId = %s [given: %s]" % (flavorId, flavorIdOrName))
+        nodeDetails = self.getNodeDetails(serverId)
+        self.log("Node %s status is %s" % (serverId, nodeDetails.status.okeanosStatus))
+        existingFlavorId = nodeDetails.flavorId
+        self.log("Requested flavorId = %s [given: %s]" % (flavorId, flavorIdOrName))
+
+        if existingFlavorId == flavorId:
+            self.log("FlavorId already is %s, no resizing action is needed !" % flavorId)
+            return
+
+        t0 = time.time()
+
+        self.log("Resizing from %s -> %s" % (existingFlavorId, flavorId))
         # Hot resizing is not supported, so we must shut the server down first
-        self.cycladesClient.shutdown_server(serverId)
-        self.waitNodeStatus(serverId, 'STOPPED')
+        self.log("Shutting down node %s" % serverId)
+        nodeDetails = self.shutdownNodeAndWait(serverId)
+        self.log("Node %s status is %s" % (serverId, nodeDetails.status.okeanosStatus))
+
+        # This takes the server to status 'RESIZE'
+        self.log("Resizing node %s ..." % serverId)
         resizeResponse = self.cycladesClient.resize_server(serverId, flavorId)
+        self.log("resizeResponse = %s" % resizeResponse)
+
+        # with until server acquires the new flavor
+        nodeDetails = self.getNodeDetails(serverId)
+        while nodeDetails.flavorId != flavorId:
+            nodeDetails = self.getNodeDetails(serverId)
+        self.log("Node %s resized" % serverId)
+
+        # And we are now ready to restart with the new flavor
+        self.log("Restarting node %s" % serverId)
         self.cycladesClient.start_server(serverId)
         self.waitNodeStatus(serverId, 'ACTIVE')
 
-        self.log("< %s" % resizeResponse)
-        return resizeResponse
+        t1 = time.time()
+        dtsec = t1 - t0
+        self.log("Node %s restarted with new flavor %s in %s sec" % (serverId, flavorId, dtsec))
