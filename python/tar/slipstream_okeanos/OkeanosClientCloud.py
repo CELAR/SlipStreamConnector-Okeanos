@@ -37,7 +37,7 @@ class OkeanosClientCloud(BaseCloudConnector):
     cloudName = 'okeanos'
 
     def __init__(self, configHolder):
-        self.log(configHolder.config)
+        self.log("configHolder = %s" % configHolder)
         self.run_category = getattr(configHolder, KEY_RUN_CATEGORY, None)
         self.log("self.run_category = %s" % self.run_category)
 
@@ -46,10 +46,10 @@ class OkeanosClientCloud(BaseCloudConnector):
 
         self._set_capabilities(contextualization=True, orchestrator_can_kill_itself_or_its_vapp=True)
 
-        self.okeanosAuthURL = None
-        self.okeanosUUID = None
-        self.okeanosToken = None
-        self.okeanosClient = None
+        self.okeanosAuthURL = None  # type: str
+        self.okeanosUUID = None     # type: str
+        self.okeanosToken = None    # type: str
+        self.okeanosClient = None   # type: slipstream_okeanos.OkeanosNativeClient
 
     def _initialization(self, user_info):
         # userInfo =
@@ -75,14 +75,14 @@ class OkeanosClientCloud(BaseCloudConnector):
         #   'General.Verbosity Level': '3',
         # }
 
-        from kamaki.clients.utils import https
-        https.patch_ignore_ssl()
+        # from kamaki.clients.utils import https
+        # https.patch_ignore_ssl()
 
         self.log("user_info = %s" % user_info)
-        self.okeanosAuthURL = user_info.get_cloud_endpoint()
-        self.okeanosUUID = user_info.get_cloud_username()
-        self.okeanosToken = user_info.get_cloud_password()
-        self.okeanosProjectId = user_info.get_cloud('project.id')
+        self.okeanosAuthURL = user_info.get_cloud_endpoint()        # type: str
+        self.okeanosUUID = user_info.get_cloud_username()           # type: str
+        self.okeanosToken = user_info.get_cloud_password()          # type: str
+        self.okeanosProjectId = user_info.get_cloud('project.id')   # type: str
         self.okeanosClient = OkeanosNativeClient(self.okeanosToken, self.okeanosAuthURL)
 
         self.log("self.okeanosAuthURL = %s" % self.okeanosAuthURL)
@@ -480,27 +480,48 @@ class OkeanosClientCloud(BaseCloudConnector):
             node_instance, pre_export=_pre_export, pre_bootstrap=pre_bootstrap,
             post_bootstrap=post_bootstrap, username=username)
 
-    def attach_disk(self, node_instance):
+    def _attach_disk(self, node_instance):
         """Attach extra disk to the VM.
         :param node_instance: node instance object
         :type node_instance: slipstream.NodeInstance.NodeInstance
         :return: name of the device that was attached
         :rtype: string
         """
-        pass
 
-    def detach_disk(self, node_instance):
+        self.log("> node_instance = %s" % node_instance)
+        # Gather parameters for the disk creation
+        serverId = node_instance.get_instance_id()
+        sizeGB = node_instance.get_disk_attach_size()
+        projectId = self.okeanosProjectId
+        self.log("serverId = %s, sizeGB = %s, projectId = %s" % (serverId, sizeGB, projectId))
+
+        volumeName, volumeId, deviceName = self.okeanosClient.attachVolume(serverId, sizeGB, projectId)
+        syntheticName = "%s,%s" % (volumeId, deviceName)
+        self.log("< %s" % syntheticName)
+        return syntheticName
+
+    def _detach_disk(self, node_instance):
         """Detach disk from the VM.
         :param node_instance: node instance object
         :type node_instance: slipstream.NodeInstance.NodeInstance
         """
-        pass
+        self.log("> node_instance = %s" % node_instance)
+        syntheticName = node_instance.get_disk_detach_device()
+        self.log(" syntheticName = %s" % syntheticName)
+        volumeId, deviceName = syntheticName.split(',')
+        _ = self.okeanosClient.deleteVolume(volumeId)
+        return syntheticName
 
-    def resize(self, node_instance):
+    def _resize(self, node_instance):
         """
         :param node_instance: node instance object
         :type node_instance: slipstream.NodeInstance.NodeInstance
         """
-        # This is the synnefo/~okeanos flavor
-        instance_type = node_instance.get_instance_type()
-        self.log("resize(), flavor = %s" % instance_type)
+        self.log("> node_instance = %s" % node_instance)
+
+        serverId = node_instance.get_instance_id()
+        # This is the synnefo/~okeanos flavor.
+        # We do not care if it is the flavor id or name, the connector lib will handle it transparently.
+        flavor = node_instance.get_instance_type()
+        self.log("flavor = %s" % flavor)
+        self.okeanosClient.resizeNode(serverId, flavor)

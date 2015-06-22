@@ -1,12 +1,14 @@
 import os
 import unittest
 import time
+import inspect
 from mock import Mock
 
 from slipstream import util
 
 from slipstream.ConfigHolder import ConfigHolder
 from slipstream.SlipStreamHttpClient import UserInfo
+from slipstream_okeanos import LOG
 from slipstream_okeanos.OkeanosClientCloud import getConnector, getConnectorClass
 from slipstream.NodeInstance import NodeInstance
 from slipstream.NodeDecorator import NodeDecorator, \
@@ -44,6 +46,9 @@ def publish_vm_info(self, vm, node_instance):
 
 
 class TestOkeanosClientCloud(unittest.TestCase):
+    def log(self, msg=''):
+        who = '%s::%s' % (self.__class__.__name__, inspect.stack()[1][3])
+        LOG('%s# %s' % (who, msg))
 
     def setUp(self):
         cn = getConnectorClass().cloudName
@@ -73,7 +78,7 @@ class TestOkeanosClientCloud(unittest.TestCase):
         self.node_instances = {}
         for i in range(1, self.multiplicity + 1):
             node_instance_name = node_name + '.' + str(i)
-            self.node_instances[node_instance_name] = NodeInstance({
+            ni = NodeInstance({
                 NodeDecorator.NODE_NAME_KEY: node_name,
                 NodeDecorator.NODE_INSTANCE_NAME_KEY: node_instance_name,
                 'cloudservice': cn,
@@ -83,11 +88,14 @@ class TestOkeanosClientCloud(unittest.TestCase):
                 cn + '.instance.type': self.ch.config[cn + '.instance.type'],
                 'network': self.ch.config['network']
             })
+            ni.set_parameter(NodeDecorator.SCALE_DISK_ATTACH_SIZE, 1)
+            self.node_instances[node_instance_name] = ni
 
         self.node_instance = NodeInstance({
             NodeDecorator.NODE_NAME_KEY: node_name,
             NodeDecorator.NODE_INSTANCE_NAME_KEY: NodeDecorator.MACHINE_NAME,
             'cloudservice': cn,
+            'disk.attach.size': self.ch.config[cn + '.disk.attach.size'],
             'image.description': 'This is a test image.',
             'image.platform': self.ch.config[cn + '.image.platform'],
             'image.loginUser': self.ch.config[cn + '.image.loginuser'],
@@ -117,8 +125,8 @@ lvs
         os.environ.pop('SLIPSTREAM_CONNECTOR_INSTANCE')
         os.environ.pop('SLIPSTREAM_BOOTSTRAP_BIN')
         os.environ.pop('SLIPSTREAM_DIID')
-        self.client = None
-        self.ch = None
+        self.client = None  # type: slipstream_okeanos.OkeanosClientCloud.OkeanosClientCloud
+        self.ch = None  # type: slipstream.ConfigHolder.ConfigHolder
 
     def _init_connector(self, run_category=RUN_CATEGORY_DEPLOYMENT):
         self.ch.set(KEY_RUN_CATEGORY, run_category)
@@ -151,21 +159,34 @@ lvs
 #         self.client.deregister_image(new_id)
 #         print('Done.')
 
+    def kk_attach_disk(self):
+        self._init_connector(run_category=RUN_CATEGORY_IMAGE)
+        self._start_images()
+        node_instance = self.node_instances.values()[0]
+        self.log("Adding disk to %s" % node_instance)
+        self.client.attach_disk(node_instance)
+
+    def _start_images(self):
+        for node_instance in self.node_instances:
+            self.log('Starting %s' % node_instance)
+
+        self.client.start_nodes_and_clients(self.user_info, self.node_instances)
+        util.printAndFlush('Instances started\n')
+        vms = self.client.get_vms()
+        for vm_name in vms:
+            self.log('Started %s: %s' % (vm_name, vms[vm_name]))
+        assert len(vms) == self.multiplicity
+
+    def _wait_running_images(self):
+        # Wait VMs enter running state.
+        #             for vm in vms.values():
+        #                 self.client._wait_vm_in_state_running_or_timeout(vm['id'])
+        time.sleep(0)   # No need for ~Okeanos, the connector does the waiting.
+
     def _start_wait_running_stop_images(self):
-
         try:
-            self.client.start_nodes_and_clients(self.user_info, self.node_instances)
-
-            util.printAndFlush('Instances started\n')
-
-            vms = self.client.get_vms()
-            assert len(vms) == self.multiplicity
-
-            # Wait VMs enter running state.
-#             for vm in vms.values():
-#                 self.client._wait_vm_in_state_running_or_timeout(vm['id'])
-
-            time.sleep(2)
+            self._start_images()
+            self._wait_running_images()
         finally:
             self.client.stop_deployment()
 

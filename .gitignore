@@ -5,3 +5,4 @@ java/jar/bin
 python/tar/okeanoslibs.tar.gz
 *.pyc
 classes/
+*.ipynb
