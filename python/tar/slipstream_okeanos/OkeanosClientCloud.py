@@ -521,7 +521,7 @@ class OkeanosClientCloud(BaseCloudConnector):
 
         serverId = node_instance.get_instance_id()
         # This is the synnefo/~okeanos flavor.
-        # We do not care if it is the flavor id or name, the connector lib will handle it transparently.
+        # We do not care if it is the flavor id or name, `okeanosClient` will handle it transparently.
         flavor = node_instance.get_instance_type()
         self.log("flavor = %s" % flavor)
         self.okeanosClient.resizeNode(serverId, flavor)
