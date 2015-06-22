@@ -693,7 +693,7 @@ class OkeanosNativeClient(object):
         hostIP = nodeDetails.ipv4s[0]
         if extraVolatileDiskGB:
             self.log("Creating volatile disk of size %s GB for machine IP=%s, id=%s" % (extraVolatileDiskGB, hostIP, nodeId))
-            volumeId = self.createVolume(nodeId, extraVolatileDiskGB)
+            volumeId = self.createVolume(nodeId, extraVolatileDiskGB, projectId)
             self.log("Created volumeId=%s of size %s GB for machine IP=%s, id=%s" % (volumeId, extraVolatileDiskGB, hostIP, nodeId))
             # We do nothing more with the volumeId.
             # When the VM is destroyed by the IaaS, the extra disk is automatically destroyed as well.
