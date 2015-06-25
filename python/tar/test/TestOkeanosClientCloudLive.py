@@ -159,12 +159,23 @@ lvs
 #         self.client.deregister_image(new_id)
 #         print('Done.')
 
-    def kk_attach_disk(self):
-        self._init_connector(run_category=RUN_CATEGORY_IMAGE)
-        self._start_images()
-        node_instance = self.node_instances.values()[0]
-        self.log("Adding disk to %s" % node_instance)
-        self.client.attach_disk(node_instance)
+    def xtest_3_attach_detach_disk(self):
+        try:
+            self._init_connector(run_category=RUN_CATEGORY_IMAGE)
+            self._start_images()
+            self.log("Images started")
+            node_instances = [self.node_instances.values()[0]]
+            self.log("Attaching disk to %s" % node_instances)
+            self.client.attach_disk(node_instances)
+            self.log("Disk attached")
+            # self.log("Detaching disk from %s" % node_instances)
+            # self.client.detach_disk(node_instances)
+            # self.log("Disk detached")
+        finally:
+            # self.log("Stopping deployment ...")
+            # self.client.stop_deployment()
+            # self.log("Deployment stopped")
+            pass
 
     def _start_images(self):
         for node_instance in self.node_instances:
