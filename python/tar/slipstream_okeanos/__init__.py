@@ -333,11 +333,13 @@ def runScriptDataOnHost(hostname, scriptData, remoteScriptFile,
                         runSynchronously=True,
                         ssh=None):
     """
+    :type hostname: str
+    :type scriptData: str
     :type remoteScriptFile: str
     :type timeout: int
     :type localPrivKey: str
-    :type hostname: strs
-    :type command: str
+    :type runSynchronously: bool
+    :type ssh: paramiko.client.SSHClient
     """
     localScriptFile = newTmpFileWithScriptData(scriptData)
     sftp = newSftpClient(hostname, username=username, ssh=ssh)
