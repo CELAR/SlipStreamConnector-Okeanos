@@ -140,6 +140,7 @@ def newTmpFileWithScriptData(scriptData):
 
 
 class NodeStatus(object):
+    # Status values (except 'UNKNOWN') below are the ones returned by Synnefo
     ACTIVE = 'ACTIVE'  # running
     STOPPED = 'STOPPED'  # shut down
     BUILD = 'BUILD'  # building
@@ -627,7 +628,7 @@ class OkeanosNativeClient(object):
         hostname = nodeDetails.ipv4s[0]
         return checkSshOnHost(hostname, username=username, localPrivKey=localPrivKey, timeout=timeout)
 
-    def waitSshOnHost(self, hostname, username="root", localPrivKey=None, timeout=None):
+    def waitSshOnHost(self, hostname, username="root", localPrivKey=None, timeout=None, sleepSeconds=10):
         t0 = time.time()
         while True:
             if checkSshOnHost(hostname, username=username, localPrivKey=localPrivKey, timeout=timeout):
@@ -635,6 +636,8 @@ class OkeanosNativeClient(object):
                 dtsec = t1 - t0
                 self.log("SSH good for %s@%s after %s sec" % (username, hostname, dtsec))
                 break
+            else:
+                time.sleep(sleepSeconds)
 
     def waitSshOnNode(self, nodeDetails, username="root", localPrivKey=None, timeout=None):
         hostname = nodeDetails.ipv4s[0]
@@ -645,11 +648,15 @@ class OkeanosNativeClient(object):
         :type nodeId: str
         :rtype : NodeDetails
         """
+        # from kamaki.cli import logger
+        # logger.add_file_logger('kamaki.clients.sent', filename='get_server_details.log')
+        # logger.add_file_logger('kamaki.clients.recv', filename='get_server_details.log')
+
         resultDict = self.cycladesClient.get_server_details(nodeId)
         nodeDetails = NodeDetails(resultDict)
         return nodeDetails
 
-    def waitNodeStatus(self, nodeId, expectedOkeanosStatus):
+    def waitNodeStatus(self, nodeId, expectedOkeanosStatus, sleepSeconds=5):
         """
         :type expectedOkeanosStatus: str
         :type nodeId: str
@@ -657,10 +664,29 @@ class OkeanosNativeClient(object):
         t0 = time.time()
         nodeDetails = self.getNodeDetails(nodeId)
         while nodeDetails.status.okeanosStatus != expectedOkeanosStatus:
+            time.sleep(sleepSeconds)
             nodeDetails = self.getNodeDetails(nodeId)
         t1 = time.time()
         dtsec = t1 - t0
         self.log("Node %s status %s after %s sec" % (nodeId, expectedOkeanosStatus, dtsec))
+        return nodeDetails
+
+    def waitCurrentStatus(self, nodeId, currentOkeanosStatus, sleepSeconds=5, maxSleepSeconds=400):
+        """ Wait untile the current status changes
+        :type nodeId: str
+        :type currentOkeanosStatus: str
+        :type sleepSeconds: float
+        """
+        t0 = time.time()
+        self.cycladesClient.wait_server(nodeId,
+                                        current_status=currentOkeanosStatus,
+                                        delay=sleepSeconds,
+                                        max_wait=maxSleepSeconds)
+        nodeDetails = self.getNodeDetails(nodeId)
+        newOkeanosStatus = nodeDetails.status.okeanosStatus
+        t1 = time.time()
+        dtsec = t1 - t0
+        self.log("Node %s status %s -> %s after %s sec" % (nodeId, currentOkeanosStatus, newOkeanosStatus, dtsec))
         return nodeDetails
 
     def createNodeAndWait(self, nodeName, flavorIdOrName, imageId, sshPubKey, initScriptPathAndData=None,
@@ -688,7 +714,7 @@ class OkeanosNativeClient(object):
                                       localPubKeyData=localPubKeyData,
                                       projectId=projectId)
         nodeId = nodeDetails.id
-        nodeDetailsActive = self.waitNodeStatus(nodeId, NodeStatus.ACTIVE)
+        nodeDetailsActive = self.waitCurrentStatus(nodeId, NodeStatus.BUILD)
         nodeDetails.updateIPsAndStatusFrom(nodeDetailsActive)
 
         # attach any additional disk
@@ -780,12 +806,14 @@ class OkeanosNativeClient(object):
                           localPrivKey=None,
                           timeout=None,
                           ssh=None):
+        self.log("> nodeId = %s" % nodeId)
         ipv4 = self.getNodeIPv4(nodeId)
         status, partitions = getHostPartitions(ipv4,
                                                username=username,
                                                localPrivKey=localPrivKey,
                                                timeout=timeout,
                                                ssh=ssh)
+        self.log("< status = %s, partitions = %s" % (status, partitions))
         return status, partitions
 
     def waitForExtraNodePartition(self, serverId, partitions,
@@ -855,7 +883,7 @@ class OkeanosNativeClient(object):
         # And we are now ready to restart with the new flavor
         self.log("Restarting node %s" % serverId)
         self.cycladesClient.start_server(serverId)
-        self.waitNodeStatus(serverId, 'ACTIVE')
+        self.waitNodeStatus(serverId, NodeStatus.ACTIVE)
 
         t1 = time.time()
         dtsec = t1 - t0
