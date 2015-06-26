@@ -177,6 +177,16 @@ lvs
             # self.log("Deployment stopped")
             pass
 
+    def xtest_3_attach_disk(self):
+        self._init_connector(run_category=RUN_CATEGORY_IMAGE)
+        self._start_images()
+        self.log("Images started")
+        node_instance = self.node_instances.values()[0]
+
+        self.log("Attaching disk to %s" % node_instance)
+        self.client.attach_disk([node_instance])
+        self.log("Disk attached")
+
     def _start_images(self):
         for node_instance in self.node_instances:
             self.log('Starting %s' % node_instance)
