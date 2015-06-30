@@ -195,7 +195,10 @@ lvs
         util.printAndFlush('Instances started\n')
         vms = self.client.get_vms()
         for vm_name in vms:
-            self.log('Started %s: %s' % (vm_name, vms[vm_name]))
+            vm = vms[vm_name]
+            self.log('Started %s: %s' % (vm_name, vm))
+            instanceId = self.client._vm_get_id(vm)
+            self.node_instances[vm_name].set_parameter(NodeDecorator.INSTANCEID_KEY, instanceId)
         assert len(vms) == self.multiplicity
 
     def _wait_running_images(self):
