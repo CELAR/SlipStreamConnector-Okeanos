@@ -265,7 +265,7 @@ def getHostPartitions(hostname,
     See http://www.tldp.org/HOWTO/Partition-Mass-Storage-Definitions-Naming-HOWTO/x160.html
     """
     command = "/bin/bash -c 'cat /proc/partitions | sed 1d | sed /^\\$/d | awk \\'{print $4}\\''"
-    LOG("> host = %s, running %s" % (hostname, command))
+    LOG("> getHostPartitions(%s), running %s" % (hostname, command))
     exitCode, stdoutLines, stderrLines = runCommandOnHost(hostname, command,
                                                           username=username,
                                                           localPrivKey=localPrivKey,
@@ -274,7 +274,7 @@ def getHostPartitions(hostname,
     status = exitCode
     device_list = [line.rstrip() for line in stdoutLines]   # remove trailing '\n'
     devices = set(device_list)
-    LOG("< status = %s, devices = %s" % (status, devices))
+    LOG("< getHostPartitions(%s), status = %s, devices = %s" % (hostname, status, devices))
     return status, devices
 
 
