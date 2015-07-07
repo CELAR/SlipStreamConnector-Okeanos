@@ -475,21 +475,9 @@ class OkeanosNativeClient(object):
     def attachVolume(self, serverId, sizeGB, projectId):
         """Create and attach an extra volume to the VM, returning the volume name, the volume id and the device name"""
         self.log("> serverId = %s, sizeGB = %s, projectId = %s" % (serverId, sizeGB, projectId))
-
-        _, partitions0 = self.getNodePartitions(serverId)
         result = self.createVolume(serverId, sizeGB, projectId)
-
-        # NOTE we use default stuff fro SSH here!
-        new_partition = self.waitForExtraNodePartition(serverId, partitions0)
-        # TODO Check if None
-
-        volumeName = result['display_name']
         volumeId = result['id']
-        deviceName = "/dev/%s" % new_partition
-
-        result = (volumeName, volumeId, deviceName)
-        self.log("< volumeName = %s, volumeId = %s, deviceName = %s" % result)
-        return result
+        return volumeId
 
     def deleteVolume(self, volumeId):
         """
