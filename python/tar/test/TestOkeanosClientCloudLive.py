@@ -172,20 +172,31 @@ lvs
             # self.client.detach_disk(node_instances)
             # self.log("Disk detached")
         finally:
-            # self.log("Stopping deployment ...")
-            # self.client.stop_deployment()
-            # self.log("Deployment stopped")
+            self.log("Stopping deployment ...")
+            self.client.stop_deployment()
+            self.log("Deployment stopped")
             pass
 
     def xtest_3_attach_disk(self):
-        self._init_connector(run_category=RUN_CATEGORY_IMAGE)
-        self._start_images()
-        self.log("Images started")
-        node_instance = self.node_instances.values()[0]
+        def stopDeployment():
+            self.log("Stopping deployment ...")
+            self.client.stop_deployment()
+            self.log("Deployment stopped")
 
-        self.log("Attaching disk to %s" % node_instance)
-        self.client.attach_disk([node_instance])
-        self.log("Disk attached")
+        try:
+            self._init_connector(run_category=RUN_CATEGORY_IMAGE)
+            self._start_images()
+            self.log("Images started")
+            node_instances = self.node_instances.values()
+            self.log("Attaching disk to %s" % node_instances)
+            self.client.attach_disk(node_instances)
+            self.log("Disk attached to %s" % node_instances)
+            stopDeployment()
+        except:
+            self.log("An error happened, stopping deployment anyway")
+            stopDeployment()
+            self.log("Re-raising the exception")
+            raise
 
     def _start_images(self):
         for node_instance in self.node_instances:
