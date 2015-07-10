@@ -180,6 +180,16 @@ lvs
             self.log("Re-raising the exception")
             raise
 
+    @staticmethod
+    def _attached_disk_setter(node_instance, device):
+        """
+        Sets the attached device on the node_instance object for the later usage in detach action.
+        This is called by the BaseCloudConnector when provided as `done_reporter` to BaseCloudConnector.attach_disk()
+        """
+        LOG("_attached_disk_setter(), node_instance=%s, device=%s" % (node_instance, device))
+        node_instance.set_parameter(NodeDecorator.SCALE_DISK_DETACH_DEVICE, device)
+        LOG("_attached_disk_setter(), node_instance=%s, device=%s" % (node_instance, device))
+
     def xtest_4_attach_detach_disk(self):
         def stopDeployment():
             self.log("Stopping deployment ...")
@@ -192,7 +202,7 @@ lvs
             self.log("Images started")
             node_instances = self.node_instances.values()
             self.log("Attaching disk to %s" % node_instances)
-            self.client.attach_disk(node_instances)
+            self.client.attach_disk(node_instances, done_reporter=self._attached_disk_setter)
             self.log("Disk attached to %s" % node_instances)
             self.log("Detaching disk from %s" % node_instances)
             self.client.detach_disk(node_instances)
