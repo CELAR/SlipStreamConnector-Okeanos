@@ -907,3 +907,4 @@ class OkeanosNativeClient(object):
         t1 = time.time()
         dtsec = t1 - t0
         self.log("Node %s restarted with new flavor %s in %s sec" % (serverId, flavorId, dtsec))
+        return flavorId
