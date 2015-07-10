@@ -385,6 +385,7 @@ class OkeanosNativeClient(object):
     VOLUME_STATUS_CREATING = 'CREATING'
     VOLUME_STATUS_IN_USE = 'IN_USE'
     VOLUME_STATUS_DELETING = 'DELETING'
+    VOLUME_STATUS_DELETED = 'DELETED'
 
     def __init__(self, token, authURL='https://accounts.okeanos.grnet.gr/identity/v2.0'):
         """
@@ -504,6 +505,7 @@ class OkeanosNativeClient(object):
         :param volumeId: str
         :return:
         """
+
         def getVolumeDetails():
             _volumeDetails = self.blockStorageClient.get_volume_details(volumeId)
             _volumeStatus = _volumeDetails[u'status'].upper()
@@ -513,9 +515,22 @@ class OkeanosNativeClient(object):
         volumeDetails, volumeStatus = getVolumeDetails()
         response = self.blockStorageClient.delete_volume(volumeId)
 
+        # Normal status transition is:
+        #   OkeanosNativeClient.VOLUME_STATUS_IN_USE    =>
+        #   OkeanosNativeClient.VOLUME_STATUS_DELETING  =>
+        #   OkeanosNativeClient.VOLUME_STATUS_DELETED
+
         while volumeStatus == OkeanosNativeClient.VOLUME_STATUS_IN_USE:
             time.sleep(sleepWaitSeconds)
             volumeDetails, volumeStatus = getVolumeDetails()
+
+        # Now it should be in status:
+        #   OkeanosNativeClient.VOLUME_STATUS_DELETING
+        #
+        # Note that real deletion means status:
+        #   OkeanosNativeClient.VOLUME_STATUS_DELETED
+        #
+        # ... But let's not wait that long
 
         return response
 
