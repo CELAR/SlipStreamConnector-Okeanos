@@ -172,27 +172,6 @@ lvs
 #         self.client.deregister_image(new_id)
 #         print('Done.')
 
-    def xtest_3_attach_disk(self):
-        def stopDeployment():
-            self.log("Stopping deployment ...")
-            self.client.stop_deployment()
-            self.log("Deployment stopped")
-
-        try:
-            self._init_connector(run_category=RUN_CATEGORY_IMAGE)
-            self._start_images()
-            self.log("Images started")
-            node_instances = self.node_instances.values()
-            self.log("Attaching disk to %s" % node_instances)
-            self.client.attach_disk(node_instances)
-            self.log("Disk attached to %s" % node_instances)
-            stopDeployment()
-        except:
-            self.log("An error happened, stopping deployment anyway")
-            stopDeployment()
-            self.log("Re-raising the exception")
-            raise
-
     @staticmethod
     def _attached_disk_setter(node_instance, device):
         """
@@ -203,7 +182,7 @@ lvs
         node_instance.set_parameter(NodeDecorator.SCALE_DISK_DETACH_DEVICE, device)
         LOG("_attached_disk_setter(), node_instance=%s, device=%s" % (node_instance, device))
 
-    def xtest_4_attach_detach_disk(self):
+    def xtest_3_attach_detach_disk(self):
         def stopDeployment():
             self.log("Stopping deployment ...")
             self.client.stop_deployment()
@@ -227,7 +206,7 @@ lvs
             self.log("Re-raising the exception")
             raise
 
-    def xtest_5_resize(self):
+    def xtest_4_resize(self):
         def stopDeployment():
             self.log("Stopping deployment ...")
             self.client.stop_deployment()
