@@ -46,14 +46,20 @@ def publish_vm_info(self, vm, node_instance):
 
 
 class TestOkeanosClientCloud(unittest.TestCase):
+    CLOUD_NAME = getConnectorClass().cloudName
+    FLAVOR_KEY = "%s.instance.type" % CLOUD_NAME
+    RESIZE_FLAVOR_KEY = "%s.resize.instance.type" % CLOUD_NAME
+
     def log(self, msg=''):
         who = '%s::%s' % (self.__class__.__name__, inspect.stack()[1][3])
         LOG('%s# %s' % (who, msg))
 
     def setUp(self):
-        cn = getConnectorClass().cloudName
+        cloudName = TestOkeanosClientCloud.CLOUD_NAME
+        flavorKey = TestOkeanosClientCloud.FLAVOR_KEY
+        resizeFlavorKey = TestOkeanosClientCloud.RESIZE_FLAVOR_KEY
 
-        os.environ['SLIPSTREAM_CONNECTOR_INSTANCE'] = cn
+        os.environ['SLIPSTREAM_CONNECTOR_INSTANCE'] = cloudName
         os.environ['SLIPSTREAM_BOOTSTRAP_BIN'] = 'http://example.com/bootstrap'
         os.environ['SLIPSTREAM_DIID'] = \
             '%s-1234-1234-1234-123456789012' % str(int(time.time()))[2:]
@@ -64,12 +70,17 @@ class TestOkeanosClientCloud(unittest.TestCase):
         self.ch = ConfigHolder(configFile=CONFIG_FILE, context={'foo': 'bar'})
         self.ch.verboseLevel = int(self.ch.verboseLevel)
 
-        self.user_info = UserInfo(cn)
+        flavor = self.ch.config[flavorKey]
+        resizeFlavor = self.ch.config[resizeFlavorKey]
+        self.log("Initial Flavor: '%s' = %s" % (flavorKey, flavor))
+        self.log("Resize  Flavor: '%s' = %s" % (resizeFlavorKey, resizeFlavor))
+
+        self.user_info = UserInfo(cloudName)
         self.user_info['General.ssh.public.key'] = self.ch.config['General.ssh.public.key']
-        self.user_info[cn + '.endpoint'] = self.ch.config[cn + '.auth_url']
-        self.user_info[cn + '.username'] = self.ch.config[cn + '.user.uuid']
-        self.user_info[cn + '.password'] = self.ch.config[cn + '.token']
-        self.user_info[cn + '.project.id'] = self.ch.config[cn + '.project.id']
+        self.user_info[cloudName + '.endpoint'] = self.ch.config[cloudName + '.auth_url']
+        self.user_info[cloudName + '.username'] = self.ch.config[cloudName + '.user.uuid']
+        self.user_info[cloudName + '.password'] = self.ch.config[cloudName + '.token']
+        self.user_info[cloudName + '.project.id'] = self.ch.config[cloudName + '.project.id']
 
         node_name = 'test_node'
 
@@ -81,11 +92,12 @@ class TestOkeanosClientCloud(unittest.TestCase):
             ni = NodeInstance({
                 NodeDecorator.NODE_NAME_KEY: node_name,
                 NodeDecorator.NODE_INSTANCE_NAME_KEY: node_instance_name,
-                'cloudservice': cn,
+                'cloudservice': cloudName,
                 'image.description': 'This is a test image.',
-                'image.platform': self.ch.config[cn + '.image.platform'],
-                'image.id': self.ch.config[cn + '.imageid'],
-                cn + '.instance.type': self.ch.config[cn + '.instance.type'],
+                'image.platform': self.ch.config[cloudName + '.image.platform'],
+                'image.id': self.ch.config[cloudName + '.imageid'],
+                flavorKey: flavor,
+                resizeFlavorKey: resizeFlavor,
                 'network': self.ch.config['network']
             })
             ni.set_parameter(NodeDecorator.SCALE_DISK_ATTACH_SIZE, 1)
@@ -94,13 +106,14 @@ class TestOkeanosClientCloud(unittest.TestCase):
         self.node_instance = NodeInstance({
             NodeDecorator.NODE_NAME_KEY: node_name,
             NodeDecorator.NODE_INSTANCE_NAME_KEY: NodeDecorator.MACHINE_NAME,
-            'cloudservice': cn,
-            'disk.attach.size': self.ch.config[cn + '.disk.attach.size'],
+            'cloudservice': cloudName,
+            'disk.attach.size': self.ch.config[cloudName + '.disk.attach.size'],
             'image.description': 'This is a test image.',
-            'image.platform': self.ch.config[cn + '.image.platform'],
-            'image.loginUser': self.ch.config[cn + '.image.loginuser'],
-            'image.id': self.ch.config[cn + '.imageid'],
-            cn + '.instance.type': self.ch.config[cn + '.instance.type'],
+            'image.platform': self.ch.config[cloudName + '.image.platform'],
+            'image.loginUser': self.ch.config[cloudName + '.image.loginuser'],
+            'image.id': self.ch.config[cloudName + '.imageid'],
+            flavorKey: flavor,
+            resizeFlavorKey: resizeFlavor,
             'network': self.ch.config['network'],
             'image.prerecipe':
 """#!/bin/sh
@@ -207,6 +220,34 @@ lvs
             self.log("Detaching disk from %s" % node_instances)
             self.client.detach_disk(node_instances)
             self.log("Disk detached")
+            stopDeployment()
+        except:
+            self.log("An error happened, stopping deployment anyway")
+            stopDeployment()
+            self.log("Re-raising the exception")
+            raise
+
+    def xtest_5_resize(self):
+        def stopDeployment():
+            self.log("Stopping deployment ...")
+            self.client.stop_deployment()
+            self.log("Deployment stopped")
+
+        try:
+            self._init_connector(run_category=RUN_CATEGORY_IMAGE)
+            self._start_images()
+            self.log("Images started")
+
+            node_instances = self.node_instances.values()
+            for node_instance in node_instances:
+                existingFlavor = node_instance.get_instance_type()
+                resizeFlavor = node_instance.get_cloud_parameter('resize.instance.type')
+                self.log("existingFlavor = %s, resizeFlavor = %s" % (existingFlavor, resizeFlavor))
+                node_instance.set_cloud_parameters({'instance.type': resizeFlavor})
+            self.log("Resizing %s" % node_instances)
+            self.client.resize(node_instances)
+            self.log("Resized %s" % node_instances)
+
             stopDeployment()
         except:
             self.log("An error happened, stopping deployment anyway")

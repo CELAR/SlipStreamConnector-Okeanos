@@ -20,3 +20,4 @@ okeanos.imageid = fe31fced-a3cf-49c6-b43b-f58f5235ba45
 okeanos.image.platform = ubuntu
 okeanos.image.loginuser = root
 okeanos.instance.type = C2R2048D10drbd
+okeanos.resize.instance.type = C1R2048D10drbd
