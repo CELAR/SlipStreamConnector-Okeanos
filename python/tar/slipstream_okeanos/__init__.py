@@ -383,6 +383,8 @@ def checkSshOnHost(hostname, username="root", localPrivKey=None, timeout=None):
 
 class OkeanosNativeClient(object):
     VOLUME_STATUS_CREATING = 'CREATING'
+    VOLUME_STATUS_IN_USE = 'IN_USE'
+    VOLUME_STATUS_DELETING = 'DELETING'
 
     def __init__(self, token, authURL='https://accounts.okeanos.grnet.gr/identity/v2.0'):
         """
@@ -496,13 +498,25 @@ class OkeanosNativeClient(object):
         volumeId = result['id']
         return volumeId
 
-    def deleteVolume(self, volumeId):
+    def deleteVolume(self, volumeId, sleepWaitSeconds=5):
         """
         Deletes the volume identified by the given `volumeId`.
         :param volumeId: str
         :return:
         """
+        def getVolumeDetails():
+            _volumeDetails = self.blockStorageClient.get_volume_details(volumeId)
+            _volumeStatus = _volumeDetails[u'status'].upper()
+            self.log("volumeDetails = %s" % _volumeDetails)
+            return _volumeDetails, _volumeStatus
+
+        volumeDetails, volumeStatus = getVolumeDetails()
         response = self.blockStorageClient.delete_volume(volumeId)
+
+        while volumeStatus == OkeanosNativeClient.VOLUME_STATUS_IN_USE:
+            time.sleep(sleepWaitSeconds)
+            volumeDetails, volumeStatus = getVolumeDetails()
+
         return response
 
     def createNode(self, nodeName, flavorIdOrName, imageId,
