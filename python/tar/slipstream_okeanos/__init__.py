@@ -382,6 +382,8 @@ def checkSshOnHost(hostname, username="root", localPrivKey=None, timeout=None):
 
 
 class OkeanosNativeClient(object):
+    VOLUME_STATUS_CREATING = 'CREATING'
+
     def __init__(self, token, authURL='https://accounts.okeanos.grnet.gr/identity/v2.0'):
         """
         :type authURL: str
@@ -440,7 +442,7 @@ class OkeanosNativeClient(object):
             instanceInfoList.append(instanceInfo)
         return instanceInfoList
 
-    def createVolume(self, serverId, sizeGB, projectId):
+    def createVolume(self, serverId, sizeGB, projectId, sleepWaitSeconds=5):
         """
         :param serverId: str
         :param sizeGB: Union[str, int]
@@ -453,6 +455,21 @@ class OkeanosNativeClient(object):
                                                          serverId,
                                                          '%s-vol-%s' % (serverId, sizeGB),
                                                          project=projectId)
+        # The volume is being created asynchronously, status is 'creating'
+        # we wait until it changes (to 'in_use')
+        volumeId = response[u'id']
+
+        def getVolumeDetails():
+            _volumeDetails = self.blockStorageClient.get_volume_details(volumeId)
+            _volumeStatus = _volumeDetails[u'status'].upper()
+            self.log("volumeDetails = %s" % _volumeDetails)
+            return _volumeDetails, _volumeStatus
+
+        volumeDetails, volumeStatus = getVolumeDetails()
+        while volumeStatus == OkeanosNativeClient.VOLUME_STATUS_CREATING:
+            time.sleep(sleepWaitSeconds)
+            volumeDetails, volumeStatus = getVolumeDetails()
+
         # response is something like this
         # {
         #     u'display_name': u'foo',
