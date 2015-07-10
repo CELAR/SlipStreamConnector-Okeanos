@@ -382,6 +382,11 @@ def checkSshOnHost(hostname, username="root", localPrivKey=None, timeout=None):
 
 
 class OkeanosNativeClient(object):
+    VOLUME_STATUS_CREATING = 'CREATING'
+    VOLUME_STATUS_IN_USE = 'IN_USE'
+    VOLUME_STATUS_DELETING = 'DELETING'
+    VOLUME_STATUS_DELETED = 'DELETED'
+
     def __init__(self, token, authURL='https://accounts.okeanos.grnet.gr/identity/v2.0'):
         """
         :type authURL: str
@@ -440,7 +445,7 @@ class OkeanosNativeClient(object):
             instanceInfoList.append(instanceInfo)
         return instanceInfoList
 
-    def createVolume(self, serverId, sizeGB, projectId):
+    def createVolume(self, serverId, sizeGB, projectId, sleepWaitSeconds=5):
         """
         :param serverId: str
         :param sizeGB: Union[str, int]
@@ -453,6 +458,21 @@ class OkeanosNativeClient(object):
                                                          serverId,
                                                          '%s-vol-%s' % (serverId, sizeGB),
                                                          project=projectId)
+        # The volume is being created asynchronously, status is 'creating'
+        # we wait until it changes (to 'in_use')
+        volumeId = response[u'id']
+
+        def getVolumeDetails():
+            _volumeDetails = self.blockStorageClient.get_volume_details(volumeId)
+            _volumeStatus = _volumeDetails[u'status'].upper()
+            self.log("volumeDetails = %s" % _volumeDetails)
+            return _volumeDetails, _volumeStatus
+
+        volumeDetails, volumeStatus = getVolumeDetails()
+        while volumeStatus == OkeanosNativeClient.VOLUME_STATUS_CREATING:
+            time.sleep(sleepWaitSeconds)
+            volumeDetails, volumeStatus = getVolumeDetails()
+
         # response is something like this
         # {
         #     u'display_name': u'foo',
@@ -479,13 +499,39 @@ class OkeanosNativeClient(object):
         volumeId = result['id']
         return volumeId
 
-    def deleteVolume(self, volumeId):
+    def deleteVolume(self, volumeId, sleepWaitSeconds=5):
         """
         Deletes the volume identified by the given `volumeId`.
         :param volumeId: str
         :return:
         """
+
+        def getVolumeDetails():
+            _volumeDetails = self.blockStorageClient.get_volume_details(volumeId)
+            _volumeStatus = _volumeDetails[u'status'].upper()
+            self.log("volumeDetails = %s" % _volumeDetails)
+            return _volumeDetails, _volumeStatus
+
+        volumeDetails, volumeStatus = getVolumeDetails()
         response = self.blockStorageClient.delete_volume(volumeId)
+
+        # Normal status transition is:
+        #   OkeanosNativeClient.VOLUME_STATUS_IN_USE    =>
+        #   OkeanosNativeClient.VOLUME_STATUS_DELETING  =>
+        #   OkeanosNativeClient.VOLUME_STATUS_DELETED
+
+        while volumeStatus == OkeanosNativeClient.VOLUME_STATUS_IN_USE:
+            time.sleep(sleepWaitSeconds)
+            volumeDetails, volumeStatus = getVolumeDetails()
+
+        # Now it should be in status:
+        #   OkeanosNativeClient.VOLUME_STATUS_DELETING
+        #
+        # Note that real deletion means status:
+        #   OkeanosNativeClient.VOLUME_STATUS_DELETED
+        #
+        # ... But let's not wait that long
+
         return response
 
     def createNode(self, nodeName, flavorIdOrName, imageId,
@@ -876,3 +922,4 @@ class OkeanosNativeClient(object):
         t1 = time.time()
         dtsec = t1 - t0
         self.log("Node %s restarted with new flavor %s in %s sec" % (serverId, flavorId, dtsec))
+        return flavorId
