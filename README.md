@@ -12,6 +12,8 @@ The connector is in version `0.5.0-SNAPSHOT`, based on SlipStrtream version `2.3
 | Run Deployment        |   ✓   |   
 | Build Image           |   [#4](https://github.com/CELAR/SlipStreamConnector-Okeanos/issues/4)   |
 | Volatile disk         |   ✓   |
+| VM resize (CPU/RAM) | ✓ |
+| VM extra disk attach/detach | ✓ |
 
 
 ## Installation
