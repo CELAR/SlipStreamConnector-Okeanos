@@ -23,7 +23,7 @@ class OkeanosRunInstances(RunInstancesCommand, OkeanosCommand):
 
     def get_cloud_specific_node_inst_cloud_params(self):
         return {'instance.type': self.get_option(self.INSTANCE_TYPE_KEY),
-                'security.groups': self.get_option(self.SECURITY_GROUP_KEY).split(',')}
+                'security.groups': self.get_option(self.SECURITY_GROUP_KEY)}
 
     def get_cloud_specific_mandatory_options(self):
         return OkeanosCommand.get_cloud_specific_mandatory_options(self) + \
